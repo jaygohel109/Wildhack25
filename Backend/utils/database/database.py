@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 from urllib.parse import quote_plus
 import certifi  # Add this import
 from .auth_util import hash_password, verify_password
-from .model import User
+from .model import User, ProfileCreate
 
               
 # Password hashing setup
@@ -67,6 +67,22 @@ async def login_user(username: str, password: str) -> dict:
         "role": user.get("role", 1),
         "id": str(user["_id"])
     }
+
+async def create_user_profile(profile: ProfileCreate):
+    user = await db["users"].find_one({"_id": ObjectId(profile.user_id)})
+    
+    if not user:
+        return {"error": "User not found"}
+    
+    if user.get("role") != profile.role:
+        return {"error": "User role mismatch"}
+
+    profile_data = profile.dict()
+    profile_data["user_id"] = ObjectId(profile.user_id)
+    
+    result = await db["profiles"].insert_one(profile_data)
+    
+    return {"message": "Profile created successfully", "profile_id": str(result.inserted_id)}
 
 async def forgot_password(username: str, new_password: str):
     user = await db["users"].find_one({"username": username})
