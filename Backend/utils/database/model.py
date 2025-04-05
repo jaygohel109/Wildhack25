@@ -23,3 +23,7 @@ class SignupRequest(BaseModel):
     username: str = Field(..., description="Email or phone number")
     password: str = Field(..., min_length=6)
     role: int = Field(..., ge=1, le=3)  # 1 = senior citizen, 2 = volenteer, 3 = admin
+    
+class ForgotPasswordRequest(BaseModel):
+    username: str
+    new_password: str
