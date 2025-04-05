@@ -1,5 +1,8 @@
 from utils.web_command_handler import WebHandler
 from utils.logging_module import setup_logger
+from fastapi import Request
+from utils.database.model import SignupRequest, LoginRequest
+from utils.database.database import signup_user, login_user
 
 class Endpoints(WebHandler):
     def __init__(self, host, port, logger, fastapi_flag):
@@ -10,7 +13,32 @@ class Endpoints(WebHandler):
         super().__init__(self.host, self.port, self.logger, self.fastapi_flag)
     
     def GET_world(self):
-        return {"value: ": "Hello World"}
+        return {"value: ": "Hello World"}  
+    
+    async def POST_signup(self, data: SignupRequest):
+        try:
+
+            self.logger.info(f"Signup attempt for: {data.username}")
+            result = await signup_user(data.username, data.password, data.role)
+
+            return result
+        
+        except Exception as e:
+            self.logger.error(f"Error in signup: {str(e)}")
+            return {"error": "Failed to create user", "detail": str(e)}
+
+
+    async def POST_signin(self, data: LoginRequest):
+            try:
+
+                self.logger.info(f"Login attempt for: {data.username}")
+                result = await login_user(data.username, data.password)
+
+                return result
+            
+            except Exception as e:
+                self.logger.error(f"Error in signin: {str(e)}")
+                return {"error": "Failed to sign in", "detail": str(e)}
 
 if __name__ == "__main__":
     logger = setup_logger('endpoints.log')

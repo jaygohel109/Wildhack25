@@ -1,2 +1,9 @@
 fastapi
 uvicorn
+dotenv
+pydantic
+passlib
+motor
+auth
+jwt
+bcrypt
