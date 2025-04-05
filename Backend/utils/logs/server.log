@@ -1,0 +1,9 @@
+2025-04-05 13:38:19,176 - server.log - INFO - Logger created in web handler
+2025-04-05 13:38:19,176 - server.log - INFO - All methods declared in main file are {}
+2025-04-05 13:38:19,177 - server.log - INFO - how are you?
+2025-04-05 13:38:41,452 - server.log - INFO - Logger created in web handler
+2025-04-05 13:38:41,452 - server.log - INFO - All methods declared in main file are {}
+2025-04-05 13:38:41,452 - server.log - INFO - how are you?
+2025-04-05 13:38:41,452 - server.log - INFO - Starting FASTAPI server with auto-reload
+2025-04-05 13:38:41,452 - server.log - INFO - Starting the server with auto-reload
+2025-04-05 13:39:08,460 - server.log - INFO - Started the server with auto-reload
