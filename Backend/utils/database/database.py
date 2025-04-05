@@ -67,3 +67,19 @@ async def login_user(username: str, password: str) -> dict:
         "role": user.get("role", 1),
         "id": str(user["_id"])
     }
+
+async def forgot_password(username: str, new_password: str):
+    user = await db["users"].find_one({"username": username})
+    if not user:
+        return {"error": "User does not exist"}
+
+    hashed_password = pwd_context.hash(new_password)
+    update_result = await db["users"].update_one(
+        {"username": username},
+        {"$set": {"password": hashed_password}}
+    )
+
+    if update_result.modified_count == 1:
+        return {"message": "Password updated successfully"}
+    else:
+        return {"error": "Password update failed"}

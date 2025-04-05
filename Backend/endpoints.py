@@ -1,8 +1,8 @@
 from utils.web_command_handler import WebHandler
 from utils.logging_module import setup_logger
 from fastapi import Request
-from utils.database.model import SignupRequest, LoginRequest
-from utils.database.database import signup_user, login_user
+from utils.database.model import SignupRequest, LoginRequest, ForgotPasswordRequest
+from utils.database.database import signup_user, login_user, forgot_password
 
 class Endpoints(WebHandler):
     def __init__(self, host, port, logger, fastapi_flag):
@@ -39,6 +39,14 @@ class Endpoints(WebHandler):
             except Exception as e:
                 self.logger.error(f"Error in signin: {str(e)}")
                 return {"error": "Failed to sign in", "detail": str(e)}
+    
+    async def POST_forgot_password(self, data: ForgotPasswordRequest):
+        try:
+            self.logger.info(f"Setting up new password for user: {data.username}")
+            result = await forgot_password(data.username, data.new_password)
+            return result
+        except Exception as e:
+            self.logger.error(f"Error in forgot passowrd")
 
 if __name__ == "__main__":
     logger = setup_logger('endpoints.log')

@@ -1,2 +1,4 @@
 /Backend/logs
 /Backend/utils/__pycache__
+/Backend/utils/database/__pycache__
+.env
