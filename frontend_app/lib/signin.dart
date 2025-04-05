@@ -1,4 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'senior_home.dart';
+import 'volunteer_home.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -11,11 +15,92 @@ class _SignInPageState extends State<SignInPage> {
   String selectedRole = 'Senior';
   bool showPassword = false;
   bool rememberMe = false;
-  bool isSignUp = false; // 👈 Track mode
+  bool isSignUp = false;
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController mobileController = TextEditingController();
+
+  final String baseUrl = 'http://localhost:8000'; // Use IP if running on emulator/device
+
+  int getRoleInt(String roleLabel) {
+    return roleLabel == 'Senior' ? 1 : 2; // Updated to match backend role values
+  }
+
+  Future<void> handleSubmit() async {
+    final uri = Uri.parse('$baseUrl/${isSignUp ? "signup" : "signin"}');
+
+    final payload = {
+      "username": emailController.text,
+      "password": passwordController.text,
+      if (isSignUp) "role": getRoleInt(selectedRole),
+    };
+
+    try {
+      final response = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(payload),
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        if (isSignUp) {
+          setState(() {
+            isSignUp = false;
+            passwordController.clear();
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Account created! Please log in."),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Logged in successfully!"),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          final role = responseData['role'];
+          if (role == 1) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const SeniorHomePage()),
+            );
+          } else if (role == 2) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const VolunteerHomePage()),
+            );
+          } else {
+            throw Exception("Unknown role returned.");
+          }
+        }
+      } else {
+        final detail = responseData['detail'];
+        if (isSignUp && detail != null && detail.toLowerCase().contains("exists")) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("User already exists"),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        } else {
+          throw Exception(detail ?? "Unknown error");
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +109,6 @@ class _SignInPageState extends State<SignInPage> {
 
     return Scaffold(
       body: Container(
-        width: double.infinity,
-        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF80D0C7), Color(0xFF13547A)],
@@ -44,7 +127,9 @@ class _SignInPageState extends State<SignInPage> {
                   children: [
                     Center(
                       child: Text(
-                        isSignUp ? "Create Your KindConnect Account" : "Let's Get You Connected",
+                        isSignUp
+                            ? "Create Your KindConnect Account"
+                            : "Let's Get You Connected",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: isTablet ? 30 : 24,
@@ -64,7 +149,6 @@ class _SignInPageState extends State<SignInPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 30),
 
                     _buildLabel("Select Role"),
@@ -94,67 +178,41 @@ class _SignInPageState extends State<SignInPage> {
 
                     const SizedBox(height: 20),
 
-                    if (selectedRole == 'Senior') ...[
-                      _buildTextField(
-                        controller: mobileController,
-                        label: "Mobile Number",
-                        icon: Icons.phone,
-                        hintText: "Enter your mobile number",
-                        keyboardType: TextInputType.phone,
-                      ),
-                    ] else ...[
-                      _buildTextField(
-                        controller: emailController,
-                        label: "Email",
-                        icon: Icons.email_outlined,
-                        hintText: "Enter your email",
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      _buildPasswordField(),
-                      if (!isSignUp)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6, bottom: 12),
-                          child: Row(
-                            children: [
-                              Checkbox(
-                                value: rememberMe,
-                                onChanged: (value) {
-                                  setState(() {
-                                    rememberMe = value ?? false;
-                                  });
-                                },
-                              ),
-                              const Text(
-                                "Remember Me",
-                                style: TextStyle(color: Colors.white),
-                              )
-                            ],
-                          ),
+                    _buildTextField(
+                      controller: emailController,
+                      label: "Email",
+                      icon: Icons.email_outlined,
+                      hintText: "Enter your email",
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    _buildPasswordField(),
+
+                    if (!isSignUp)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6, bottom: 12),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: rememberMe,
+                              onChanged: (value) {
+                                setState(() {
+                                  rememberMe = value ?? false;
+                                });
+                              },
+                            ),
+                            const Text(
+                              "Remember Me",
+                              style: TextStyle(color: Colors.white),
+                            )
+                          ],
                         ),
-                    ],
+                      ),
 
                     const SizedBox(height: 20),
 
-                    // Submit button
                     Center(
                       child: ElevatedButton(
-                        onPressed: () {
-                          if (isSignUp) {
-                            debugPrint("Creating account...");
-                            debugPrint("Role: $selectedRole");
-                            if (selectedRole == 'Senior') {
-                              debugPrint("Mobile: ${mobileController.text}");
-                            } else {
-                              debugPrint("Email: ${emailController.text}");
-                              debugPrint("Password: ${passwordController.text}");
-                            }
-                          } else {
-                            debugPrint("Logging in...");
-                            debugPrint("Role: $selectedRole");
-                            debugPrint("Email: ${emailController.text}");
-                            debugPrint("Password: ${passwordController.text}");
-                          }
-                        },
+                        onPressed: handleSubmit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: const Color(0xFF13547A),
@@ -172,7 +230,6 @@ class _SignInPageState extends State<SignInPage> {
 
                     const SizedBox(height: 25),
 
-                    // Toggle Login / Sign Up
                     Center(
                       child: TextButton(
                         onPressed: () {
