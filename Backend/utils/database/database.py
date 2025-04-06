@@ -53,7 +53,7 @@ async def signup_user(username: str, password: str, role: int) -> dict:
         "role": role
     }
     result = await db["users"].insert_one(user_data)
-    return {"message": "User created successfully", "id": str(result.inserted_id)}
+    return {"message": "User created successfully", "id": ObjectId(result.inserted_id)}
 
 async def login_user(username: str, password: str) -> dict:
     user = await db["users"].find_one({"username": username})
@@ -121,7 +121,7 @@ async def create_task(task: TasksRequest):
 
 
 async def get_matching_tasks(volunteer_id: str):
-    volunteer = await db["profiles"].find_one({"user_id": ObjectId(volunteer_id)})
+    volunteer = await db["users"].find_one({"_id": ObjectId(volunteer_id)})
     if not volunteer:
         return {"error": "Volunteer not found"}
 
@@ -129,13 +129,14 @@ async def get_matching_tasks(volunteer_id: str):
 
     cursor = db["tasks"].find({
         "category": {"$in": skills},
-        "status": "open"
+        "status": {"$in": ["open", "in-progress"]}
     })
 
     matching_tasks = []
     async for task in cursor:
         task["_id"] = str(task["_id"])
         task["created_by"] = str(task["created_by"])
+        print(task.get("volunteer_id"))
         if task.get("volunteer_id"):
             task["volunteer_id"] = str(task["volunteer_id"])
         matching_tasks.append(task)
