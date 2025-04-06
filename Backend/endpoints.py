@@ -2,7 +2,7 @@ from utils.web_command_handler import WebHandler
 from utils.logging_module import setup_logger
 from fastapi import Request
 from utils.database.model import SignupRequest, LoginRequest, ProfileCreate, ForgotPasswordRequest
-from utils.database.database import signup_user, login_user, create_user_profile, forgot_password, create_task, assign_task_to_volunteer, get_task_with_volunteer, get_matching_tasks
+from utils.database.database import signup_user, login_user, create_user_profile, forgot_password, create_task, assign_task_to_volunteer, get_task_with_volunteer, get_matching_tasks, complete_task
 from utils.database.tasks_model import TasksRequest, AssignTasks
 from fastapi import Query
 
@@ -96,7 +96,13 @@ class Endpoints(WebHandler):
             self.logger.error(f"Error fetching task and volunteer info: {str(e)}")
             return {"error": "Unable to retrieve task details"}
 
-
+    async def POST_complete_task(self, task_id: str):
+        try:
+            result = await complete_task(task_id)
+            return result
+        except Exception as e:
+            self.logger.error(f"Unable to change the status to complete in task: {e}")
+            return {"error": "Unable to change the status to complete in task"}
 if __name__ == "__main__":
     logger = setup_logger('endpoints.log')
     endpoint = Endpoints("0.0.0.0", 8000, logger, True)

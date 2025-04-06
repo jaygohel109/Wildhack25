@@ -184,3 +184,21 @@ async def get_task_with_volunteer(task_id: str):
             "gender": volunteer["gender"]
         } if volunteer else None
     }
+    
+async def complete_task(task_id: str):
+    result = await db["tasks"].update_one(
+        {
+            "_id": ObjectId(task_id),
+            "status": "in-progress"
+        },
+        {
+            "$set": {
+                "status": "completed"
+            }
+        }
+    )
+
+    if result.modified_count == 1:
+        return {"message": "Task completed successfully"}
+    else:
+        return {"error": "Task could not be completed (already taken or not found)"}
