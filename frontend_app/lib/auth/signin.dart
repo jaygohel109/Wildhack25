@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:frontend_app/profile/my-profile.dart';
 import 'package:http/http.dart' as http;
 import '../senior/senior_home.dart';
 import '../volunteer/volunteer_home.dart';
@@ -47,16 +48,19 @@ class _SignInPageState extends State<SignInPage> {
 
       if (response.statusCode == 200) {
         if (isSignUp) {
-          setState(() {
-            isSignUp = false;
-            passwordController.clear();
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Account created! Please log in."),
-              backgroundColor: Colors.green,
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProfilePage(
+                userData: {
+                  "email": payload["username"], // Assuming email == username
+                  "role": payload["role"],
+                  "id": responseData['id'] ?? "",
+                },
+              ),
             ),
           );
+
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
