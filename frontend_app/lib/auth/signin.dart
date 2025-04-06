@@ -60,7 +60,6 @@ class _SignInPageState extends State<SignInPage> {
               ),
             ),
           );
-
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -73,7 +72,9 @@ class _SignInPageState extends State<SignInPage> {
           if (role == 1) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => SeniorHomePage(userId: responseData['id'] ?? "")),
+              MaterialPageRoute(
+                  builder: (_) =>
+                      SeniorHomePage(userId: responseData['id'] ?? "")),
             );
           } else if (role == 2) {
             Navigator.pushReplacement(

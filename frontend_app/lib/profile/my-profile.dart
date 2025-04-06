@@ -3,15 +3,20 @@ import 'package:frontend_app/senior/senior_home.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+
+import '../theme/theme_colors.dart';
+
 class ProfilePage extends StatefulWidget {
   final Map<String, dynamic> userData;
   const ProfilePage({super.key, required this.userData});
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
+
 class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final Map<String, dynamic> profileData = {};
+  String selectedGender = 'Male';
   final String baseUrl = "http://localhost:8000";
   // Skills setup
   final List<Map<String, dynamic>> skillOptions = [
@@ -35,6 +40,7 @@ class _ProfilePageState extends State<ProfilePage> {
       profileData['email'] = widget.userData['email'];
     }
   }
+
   Widget _buildTextField(String label, String key,
       {TextInputType inputType = TextInputType.text}) {
     return Padding(
@@ -43,12 +49,40 @@ class _ProfilePageState extends State<ProfilePage> {
         keyboardType: inputType,
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          labelStyle: const TextStyle(fontFamily: 'Nunito', color: slateText),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFFdf9d72), // unfocused border
+            ),
+          ),
+          hintText: label,
+          hintStyle: const TextStyle(
+            fontFamily: 'Nunito',
+            color: Color(0xFFdf9d72),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFFdf9d72),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFFdf9d72), // 👈 your custom border color
+              width: 2,
+            ),
+          ),
         ),
+        style: const TextStyle(fontFamily: 'Nunito', color: Colors.black87),
         onSaved: (val) => profileData[key] = val,
       ),
     );
   }
+
   Widget _buildDisabledField(String label, String? value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -57,14 +91,39 @@ class _ProfilePageState extends State<ProfilePage> {
         readOnly: true,
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          labelStyle: const TextStyle(fontFamily: 'Nunito', color: slateText),
           filled: true,
           fillColor: Colors.grey.shade200,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFFdf9d72), // unfocused border
+            ),
+          ),
+          hintText: label,
+          hintStyle: const TextStyle(
+            fontFamily: 'Nunito',
+            color: Color(0xFFdf9d72),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFFdf9d72),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color(0xFFdf9d72), // 👈 your custom border color
+              width: 2,
+            ),
+          ),
         ),
-        style: const TextStyle(color: Colors.black87),
+        style: const TextStyle(fontFamily: 'Nunito', color: Colors.black87),
       ),
     );
   }
+
   Widget _buildSkillMultiSelect() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -97,6 +156,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
   Widget _buildDOBPicker() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -107,6 +167,23 @@ class _ProfilePageState extends State<ProfilePage> {
             initialDate: DateTime(1950),
             firstDate: DateTime(1900),
             lastDate: DateTime.now(),
+            builder: (context, child) {
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: Color(0xFFCE5E50), // sunsetCoral - header, buttons
+                    onPrimary: Colors.white, // text on top of header
+                    onSurface: Color(0xFF3D3D3D), // main text color
+                  ),
+                  textTheme: const TextTheme(
+                    titleMedium: TextStyle(fontFamily: 'Nunito'),
+                    bodyLarge: TextStyle(fontFamily: 'Nunito'),
+                  ),
+                  dialogBackgroundColor: Color(0xFFFFF1E6), // peachCream
+                ),
+                child: child!,
+              );
+            },
           );
           if (picked != null) {
             setState(() {
@@ -117,15 +194,45 @@ class _ProfilePageState extends State<ProfilePage> {
           }
         },
         child: InputDecorator(
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: "Date of Birth",
-            border: OutlineInputBorder(),
+            labelStyle: const TextStyle(fontFamily: 'Nunito', color: slateText),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFdf9d72), // unfocused border
+              ),
+            ),
+            hintText: "Enter Date of Birth",
+            hintStyle: const TextStyle(
+              fontFamily: 'Nunito',
+              color: Color(0xFFdf9d72),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFdf9d72),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFdf9d72), // 👈 your custom border color
+                width: 2,
+              ),
+            ),
           ),
-          child: Text(formattedDOB ?? "Select DOB"),
+          child: Text(
+            formattedDOB ?? "Select DOB",
+            style: const TextStyle(fontFamily: 'Nunito'),
+          ),
         ),
       ),
     );
   }
+
   Future<void> _submitProfile() async {
     _formKey.currentState?.save();
     final uri = Uri.parse('$baseUrl/create_profile');
@@ -164,12 +271,26 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final role = widget.userData['role'];
     final email = widget.userData['email'];
     return Scaffold(
-      appBar: AppBar(title: const Text("Complete Your Profile")),
+      backgroundColor: peachCream,
+      appBar: AppBar(
+        backgroundColor: sunsetCoral,
+        title: const Text(
+          "Complete Your Profile",
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -182,26 +303,63 @@ class _ProfilePageState extends State<ProfilePage> {
               _buildTextField("Last Name", "last_name"),
               _buildTextField("Phone", "phone", inputType: TextInputType.phone),
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: "Gender",
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: "Male", child: Text("Male")),
-                    DropdownMenuItem(value: "Female", child: Text("Female")),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      profileData["gender"] = val;
-                    }
-                  },
-                ),
-              ),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(
+                            0xFFdf9d72), // matching your highlight color
+                        width: 1.2,
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: selectedGender,
+                        hint: const Text(
+                          "Select Gender",
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: Color(0xFF5F7983),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        icon: const Icon(Icons.keyboard_arrow_down,
+                            color: Color(0xFFdf9d72)),
+                        dropdownColor: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        style: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 16,
+                          color: Color(0xFF3D3D3D),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: "Male",
+                            child: Text("Male"),
+                          ),
+                          DropdownMenuItem(
+                            value: "Female",
+                            child: Text("Female"),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          setState(() {
+                            selectedGender = val!;
+                            profileData["gender"] = val;
+                          });
+                        },
+                      ),
+                    ),
+                  )),
               _buildTextField("Street Address", "street_address"),
               _buildTextField("City", "city"),
-              _buildTextField("State & ZIP Code (e.g., Illinois 60616)", "state_zip"),
+              _buildTextField(
+                  "State & ZIP Code (e.g., Illinois 60616)", "state_zip"),
               if (role == 1) ...[
                 _buildDOBPicker(),
               ] else if (role == 2) ...[
@@ -210,6 +368,19 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
               const SizedBox(height: 20),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: sunsetCoral,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 onPressed: _submitProfile,
                 child: const Text("Submit"),
               )

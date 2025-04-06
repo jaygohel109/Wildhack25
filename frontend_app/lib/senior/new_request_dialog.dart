@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../theme/theme_colors.dart';
+
 class NewRequestDialog extends StatefulWidget {
   final String userId;
 
@@ -64,11 +66,94 @@ class _NewRequestDialogState extends State<NewRequestDialog> {
     }
   }
 
+  Widget _buildStyledTextField({
+    required String label,
+    int maxLines = 1,
+    required FormFieldSetter<String> onSaved,
+    FormFieldValidator<String>? validator,
+  }) {
+    return TextFormField(
+      maxLines: maxLines,
+      style: const TextStyle(fontFamily: 'Nunito'),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(
+            fontFamily: 'Nunito',
+            color: Color(0xFF5F7983),
+            fontWeight: FontWeight.bold),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Color(0xFFdf9d72),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Color(0xFFdf9d72), // 👈 your custom border color
+            width: 2,
+          ),
+        ),
+      ),
+      onSaved: onSaved,
+      validator: validator,
+    );
+  }
+
+  Widget _buildStyledDropdown({
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(
+            fontFamily: 'Nunito',
+            color: Color(0xFF5F7983),
+            fontWeight: FontWeight.bold),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Color(0xFFdf9d72), // 👈 your custom border color
+            width: 2,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Color(0xFFdf9d72),
+          ),
+        ),
+      ),
+      items: items
+          .map((item) => DropdownMenuItem(
+                value: item,
+                child: Text(
+                  item[0].toUpperCase() + item.substring(1),
+                  style: const TextStyle(
+                      fontFamily: 'Nunito', fontWeight: FontWeight.bold),
+                ),
+              ))
+          .toList(),
+      onChanged: onChanged,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.all(20),
+      backgroundColor: peachCream,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -80,19 +165,17 @@ class _NewRequestDialogState extends State<NewRequestDialog> {
                 const Text(
                   'New Request',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 30,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Nunito',
+                    color: skyAsh, // skyAsh
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // Issue
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Issue',
-                    border: OutlineInputBorder(),
-                  ),
+                _buildStyledTextField(
+                  label: 'Issue',
                   onSaved: (value) => _formData['issue'] = value,
                   validator: (value) =>
                       value!.isEmpty ? 'Please enter an issue' : null,
@@ -100,66 +183,72 @@ class _NewRequestDialogState extends State<NewRequestDialog> {
                 const SizedBox(height: 16),
 
                 // Priority Dropdown
-                DropdownButtonFormField<String>(
+                _buildStyledDropdown(
+                  label: 'Priority',
                   value: _formData['priority'],
-                  decoration: const InputDecoration(
-                    labelText: 'Priority',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'normal', child: Text('Normal')),
-                    DropdownMenuItem(value: 'urgent', child: Text('Urgent')),
-                  ],
-                  onChanged: (value) =>
-                      setState(() => _formData['priority'] = value!),
+                  items: const ['normal', 'urgent'],
+                  onChanged: (val) =>
+                      setState(() => _formData['priority'] = val!),
                 ),
                 const SizedBox(height: 16),
 
                 // Preferable Gender
-                DropdownButtonFormField<String>(
+                _buildStyledDropdown(
+                  label: 'Preferable Gender',
                   value: _formData['preferable_gender'],
-                  decoration: const InputDecoration(
-                    labelText: 'Preferable Gender',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'any', child: Text('Any')),
-                    DropdownMenuItem(value: 'male', child: Text('Male')),
-                    DropdownMenuItem(value: 'female', child: Text('Female')),
-                  ],
-                  onChanged: (value) =>
-                      setState(() => _formData['preferable_gender'] = value!),
+                  items: const ['any', 'male', 'female'],
+                  onChanged: (val) =>
+                      setState(() => _formData['preferable_gender'] = val!),
                 ),
                 const SizedBox(height: 16),
 
                 // Description
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    border: OutlineInputBorder(),
-                  ),
+                _buildStyledTextField(
+                  label: 'Description',
                   maxLines: 3,
                   onSaved: (value) => _formData['description'] = value,
                   validator: (value) =>
                       value!.isEmpty ? 'Please enter a description' : null,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 // Submit button
-                ElevatedButton(
-                  onPressed: _isSubmitting
-                      ? null
-                      : () {
-                          if (_formKey.currentState!.validate()) {
-                            _formKey.currentState!.save();
-                            _submitTask();
-                          }
-                        },
-                  child: _isSubmitting
-                      ? const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        )
-                      : const Text('Submit'),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: sunsetCoral,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      textStyle: const TextStyle(
+                        fontSize: 20,
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.bold,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () {
+                            if (_formKey.currentState!.validate()) {
+                              _formKey.currentState!.save();
+                              _submitTask();
+                            }
+                          },
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text('Submit'),
+                  ),
                 ),
               ],
             ),

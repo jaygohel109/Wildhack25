@@ -184,9 +184,13 @@ class SeniorHomePage extends StatelessWidget {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
-      onPressed: () => _onNewRequest(context, userId), // Pass userId here
-      child: const Icon(Icons.add),
-),      bottomNavigationBar: ClipRRect(
+        onPressed: () => _onNewRequest(context, userId),
+        backgroundColor: sunsetCoral, // 🔥 YOUR THEME COLOR
+        foregroundColor: const Color.fromRGBO(
+            255, 255, 255, 1), // optional: icon color // Pass userId here
+        child: const Icon(Icons.add),
+      ),
+      bottomNavigationBar: ClipRRect(
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -202,14 +206,12 @@ class SeniorHomePage extends StatelessWidget {
     );
   }
 
-static void _onNewRequest(BuildContext context, String userId) {
-  showDialog(
-    context: context,
-    builder: (_) => NewRequestDialog(
-      userId: userId
-    ),
-  );
-}
+  static void _onNewRequest(BuildContext context, String userId) {
+    showDialog(
+      context: context,
+      builder: (_) => NewRequestDialog(userId: userId),
+    );
+  }
 
   Widget _buildHistoryCard(String title, String status, String volunteerName,
       String avatarUrl, String dateCompleted) {
