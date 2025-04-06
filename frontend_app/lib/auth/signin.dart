@@ -79,7 +79,9 @@ class _SignInPageState extends State<SignInPage> {
           } else if (role == 2) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => VolunteerHomePage(userId: responseData['id'] ?? "")),
+              MaterialPageRoute(
+                  builder: (_) =>
+                      VolunteerHomePage(userId: responseData['id'] ?? "")),
             );
           }
         }
