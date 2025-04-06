@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_app/senior/senior_home.dart';
+import 'package:frontend_app/volunteer/volunteer_home.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -258,7 +259,12 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           );
         } else if (profileData['role'] == 2) {
-          Navigator.pushReplacementNamed(context, '/volunteerHome');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VolunteerHomePage(userId: profileData['user_id']),
+            ),
+          );
         }
       } else {
         throw Exception(data['detail'] ?? "Profile submission failed");
