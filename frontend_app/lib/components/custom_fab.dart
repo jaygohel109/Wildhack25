@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_app/theme/theme_colors.dart';
 
 class CustomFloatingActionButton extends StatelessWidget {
   final VoidCallback onPressed;
@@ -11,7 +12,7 @@ class CustomFloatingActionButton extends StatelessWidget {
       height: 56,
       width: 56,
       decoration: BoxDecoration(
-        color: const Color(0xFF13547A),
+        color: sunsetCoral,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(

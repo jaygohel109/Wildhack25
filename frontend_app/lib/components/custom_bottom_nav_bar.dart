@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_app/theme/theme_colors.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final VoidCallback? onHomePressed;
@@ -14,20 +15,20 @@ class CustomBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
-      notchMargin: 8,
-      color: Colors.white,
+      notchMargin: 10,
+      color: sandBlush,
       child: SizedBox(
-        height: 60,
+        height: 40,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             IconButton(
-              icon: const Icon(Icons.home, color: Color(0xFF13547A)),
+              icon: const Icon(Icons.home, color: skyAsh, size: 40),
               onPressed: onHomePressed ?? () {},
             ),
-            const SizedBox(width: 48), // space for FAB
+            const SizedBox(width: 30), // space for FAB
             IconButton(
-              icon: const Icon(Icons.settings, color: Color(0xFF13547A)),
+              icon: const Icon(Icons.settings, color: skyAsh, size: 40),
               onPressed: onSettingsPressed ?? () {},
             ),
           ],
