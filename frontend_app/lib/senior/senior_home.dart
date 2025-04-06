@@ -42,7 +42,8 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
   }
 
   Future<void> fetchActiveTasks() async {
-    final url = Uri.parse('http://localhost:8000/active_tasks?user_id=${widget.userId}');
+    final url = Uri.parse(
+        'http://localhost:8000/active_tasks?user_id=${widget.userId}');
     try {
       final response = await http.get(url);
       final data = jsonDecode(response.body);
@@ -60,13 +61,15 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
   }
 
   Future<void> fetchCompletedTasks() async {
-    final url = Uri.parse('http://localhost:8000/completed_tasks?user_id=${widget.userId}');
+    final url = Uri.parse(
+        'http://localhost:8000/completed_tasks?user_id=${widget.userId}');
     try {
       final response = await http.get(url);
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['completed_tasks'] != null) {
         setState(() {
-          completedTasks = List<Map<String, dynamic>>.from(data['completed_tasks']);
+          completedTasks =
+              List<Map<String, dynamic>>.from(data['completed_tasks']);
           isLoadingCompleted = false;
         });
       }
@@ -147,13 +150,14 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
                       ? PageView.builder(
                           controller: _pageController,
                           itemCount: activeTasks.length,
-                          itemBuilder: (_, index) => _buildTaskCard(activeTasks[index]),
+                          itemBuilder: (_, index) =>
+                              _buildTaskCard(activeTasks[index]),
                         )
                       : const Center(child: Text("No active requests found.")),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             const Text(
-              "📖 Request History",
+              "Request History",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -172,10 +176,12 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
                           itemBuilder: (context, index) {
                             final task = completedTasks[index];
                             final volunteer = task['volunteer'];
-                            final avatarUrl = 'https://i.pravatar.cc/300?img=${20 + index}';
-                            final volunteerName = volunteer != null && volunteer['name'] != null
-                                ? volunteer['name']
-                                : 'Not assigned';
+                            final avatarUrl =
+                                'https://i.pravatar.cc/300?img=20';
+                            final volunteerName =
+                                volunteer != null && volunteer['name'] != null
+                                    ? volunteer['name']
+                                    : 'Not assigned';
                             final createdAt = task['created_at'] != null
                                 ? DateTime.parse(task['created_at']).toLocal()
                                 : null;
@@ -207,6 +213,9 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
             _onNewRequestSubmitted(newTask);
           }
         },
+        backgroundColor: sunsetCoral, // 🔥 YOUR THEME COLOR
+        foregroundColor: const Color.fromRGBO(
+            255, 255, 255, 1), // optional: icon color // Pass userId here
         child: const Icon(Icons.add),
       ),
       bottomNavigationBar: ClipRRect(
@@ -240,11 +249,23 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Title", style: TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Nunito', fontSize: 14)),
+            const Text("Title",
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Nunito',
+                    fontSize: 14)),
             const SizedBox(height: 4),
-            Text(task['issue'] ?? '-', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Nunito')),
+            Text(task['issue'] ?? '-',
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Nunito')),
             const SizedBox(height: 16),
-            const Text("Status", style: TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Nunito', fontSize: 14)),
+            const Text("Status",
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Nunito',
+                    fontSize: 14)),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -254,17 +275,28 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
               ),
               child: Text(
                 task['status'] ?? '-',
-                style: const TextStyle(color: Color(0xFFCE5E50), fontWeight: FontWeight.w600, fontFamily: 'Nunito'),
+                style: const TextStyle(
+                    color: Color(0xFFCE5E50),
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Nunito'),
               ),
             ),
-            const SizedBox(height: 16),
-            const Text("Volunteer", style: TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Nunito', fontSize: 14)),
+            const SizedBox(height: 13),
+            const Text("Volunteer",
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Nunito',
+                    fontSize: 14)),
             const SizedBox(height: 8),
             Row(
               children: [
                 const CircleAvatar(radius: 20, child: Text("NA")),
                 const SizedBox(width: 12),
-                Text(volunteerName, style: const TextStyle(fontSize: 16, fontFamily: 'Nunito', fontWeight: FontWeight.w500))
+                Text(volunteerName,
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w500))
               ],
             ),
           ],
@@ -273,7 +305,8 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
     );
   }
 
-  Widget _buildHistoryCard(String title, String status, String volunteerName, String avatarUrl, String dateCompleted) {
+  Widget _buildHistoryCard(String title, String status, String volunteerName,
+      String avatarUrl, String dateCompleted) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
@@ -284,25 +317,41 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           child: Row(
             children: [
-              CircleAvatar(radius: 18, backgroundImage: NetworkImage(avatarUrl)),
+              CircleAvatar(
+                  radius: 18, backgroundImage: NetworkImage(avatarUrl)),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Nunito', color: slateText)),
+                    Text(title,
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Nunito',
+                            color: slateText)),
                     const SizedBox(height: 6),
-                    Text("Completed by $volunteerName on $dateCompleted", style: const TextStyle(fontSize: 13, color: bodyText, fontFamily: 'Nunito')),
+                    Text("Completed by $volunteerName on $dateCompleted",
+                        style: const TextStyle(
+                            fontSize: 13,
+                            color: bodyText,
+                            fontFamily: 'Nunito')),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text("Done", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Nunito', color: mutedNavy)),
+                child: const Text("Done",
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Nunito',
+                        color: mutedNavy)),
               ),
             ],
           ),
@@ -312,7 +361,21 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
   }
 
   String _formatMonth(int month) {
-    const months = [ '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return months[month];
   }
 }
