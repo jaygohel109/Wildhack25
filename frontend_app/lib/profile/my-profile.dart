@@ -215,7 +215,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   },
                 ),
               ),
-              _buildTextField("Location", "location"),
+              _buildTextField("Street Address", "street_address"),
+              _buildTextField("City", "city"),
+              _buildTextField("State & ZIP Code (e.g., Illinois 60616)", "state_zip"),
               if (role == 1) ...[
                 _buildDOBPicker(),
               ] else if (role == 2) ...[
