@@ -228,6 +228,27 @@ async def get_active_tasks_by_user(user_id: str):
     results = await db["tasks"].aggregate(pipeline).to_list(length=None)
     return {"active_tasks": results}
 
+async def get_completed_tasks_by_volunteer(volunteer_id: str):
+    cursor = db["tasks"].find({
+        "volunteer_id": ObjectId(volunteer_id),
+        "status": "completed"
+    })
+
+    completed_tasks = []
+    async for task in cursor:
+        completed_tasks.append({
+            "_id": str(task["_id"]),
+            "issue": task.get("issue"),
+            "description": task.get("description"),
+            "priority": task.get("priority"),
+            "category": task.get("category"),
+            "status": task.get("status"),
+            "created_by": str(task.get("created_by")),
+            "volunteer_id": str(task.get("volunteer_id"))
+        })
+
+    return {"completed_tasks": completed_tasks}
+
 async def get_completed_tasks_by_user(user_id: str):
     pipeline = [
         {
@@ -356,7 +377,7 @@ async def get_task_with_volunteer(task_id: str):
             "gender": volunteer["gender"]
         } if volunteer else None
     }
-    
+
 async def complete_task(task_id: str):
     result = await db["tasks"].update_one(
         {
