@@ -17,7 +17,7 @@ class VolunteerHomePage extends StatefulWidget {
 
 class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProviderStateMixin {
   List<Map<String, String>> suggestedTasks = [];
-  Map<String, String>? currentTask;
+  List<Map<String, String>> currentTasks = [];
   List<Map<String, String>> completedTasks = [];
   final String baseUrl = "http://localhost:8000";
   bool isAnimating = false;
@@ -27,11 +27,12 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
   void initState() {
     super.initState();
     _fetchSuggestedTasks();
+    _fetchCurrentTask();
   }
 
   Future<void> _fetchSuggestedTasks() async {
     try {
-      final uri = Uri.parse("$baseUrl/matching_tasks/${widget.userId}"); // <-- Update as needed
+      final uri = Uri.parse("$baseUrl/matching_tasks?volunteer_id=${widget.userId}");
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -53,6 +54,31 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
     } catch (e) {
       print("Error fetching tasks: $e");
       setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _fetchCurrentTask() async {
+    try {
+      final uri = Uri.parse("$baseUrl/current_volunteer_tasks?user_id=${widget.userId}");
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> tasks = data["current_tasks"];
+
+        setState(() {
+          currentTasks = tasks.map<Map<String, String>>((task) {
+            return {
+              "title": task["issue"] ?? "Untitled Task",
+              "subtitle": task["description"] ?? "No Description",
+              "task_id": task["_id"],
+            };
+          }).toList();
+        });
+      } else {
+        throw Exception("Failed to fetch current task");
+      }
+    } catch (e) {
+      print("Error fetching current task: $e");
     }
   }
 
@@ -105,15 +131,32 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       ElevatedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
                           Navigator.pop(context);
                           setState(() {
                             suggestedTasks.remove(task);
                           });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("✅ Approved: ${task['title']}")),
+
+                          final uri = Uri.parse('$baseUrl/assign_task');
+                          final response = await http.post(
+                            uri,
+                            headers: {'Content-Type': 'application/json'},
+                            body: jsonEncode({
+                              'task_id': task['task_id'],
+                              'volunteer_id': widget.userId,
+                            }),
                           );
-                          // TODO: Call assign_task_to_volunteer
+
+                          if (response.statusCode == 200) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("✅ Approved: ${task['title']}")),
+                            );
+                            _fetchCurrentTask(); // Refresh current tasks
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("❌ Failed to assign task")),
+                            );
+                          }
                         },
                         icon: const Icon(Icons.check),
                         label: const Text("Approve"),
@@ -153,10 +196,8 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
     );
   }
 
-  void _showCurrentTaskModal() {
-    if (currentTask != null) {
-      _showTaskModal(currentTask!, showActions: false); // No approve/reject for current task
-    }
+  void _showCurrentTaskModal(Map<String, String> task) {
+    _showTaskModal(task, showActions: false);
   }
 
   Widget _buildHistoryCard(Map<String, String> task) {
@@ -247,17 +288,35 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
                 const SizedBox(height: 40),
                 const Text("Current Task", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
-                if (currentTask != null)
-                  GestureDetector(
-                    onTap: _showCurrentTaskModal,
-                    child: Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      child: ListTile(
-                        leading: const Icon(Icons.assignment_turned_in),
-                        title: Text(currentTask!['title']!),
-                        subtitle: Text(currentTask!['subtitle']!),
-                        trailing: const Icon(Icons.info_outline),
-                      ),
+                if (currentTasks.isNotEmpty)
+                  SizedBox(
+                    height: 160,
+                    child: PageView.builder(
+                      itemCount: currentTasks.length,
+                      controller: PageController(viewportFraction: 0.9),
+                      itemBuilder: (context, index) {
+                        final task = currentTasks[index];
+                        return GestureDetector(
+                          onTap: () => _showCurrentTaskModal(task),
+                          child: Card(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            color: Colors.orange[100],
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.assignment_turned_in, size: 30),
+                                  const SizedBox(height: 8),
+                                  Text(task['title']!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 6),
+                                  Text(task['subtitle']!, style: const TextStyle(fontSize: 14)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 const SizedBox(height: 30),
