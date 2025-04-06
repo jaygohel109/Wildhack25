@@ -28,6 +28,7 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
     super.initState();
     _fetchSuggestedTasks();
     _fetchCurrentTask();
+    _fetchCompletedTasks(); // Fetch history data
   }
 
   Future<void> _fetchSuggestedTasks() async {
@@ -79,6 +80,31 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
       }
     } catch (e) {
       print("Error fetching current task: $e");
+    }
+  }
+
+  Future<void> _fetchCompletedTasks() async {
+    try {
+      final uri = Uri.parse("$baseUrl/history_of_volunteers?user_id=${widget.userId}");
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> tasks = data["completed_tasks"];
+
+        setState(() {
+          completedTasks = tasks.map<Map<String, String>>((task) {
+            return {
+              "title": task["issue"] ?? "Untitled Task",
+              "status": task["status"] ?? "Completed",
+              "volunteer": task["volunteer"]?["name"] ?? "Unknown",
+              "avatarUrl": "https://i.pravatar.cc/300?img=20",
+              "date": "Apr 4, 2025" // Replace with real date from API if available
+            };
+          }).toList();
+        });
+      }
+    } catch (e) {
+      print("Error fetching completed tasks: $e");
     }
   }
 
@@ -151,7 +177,7 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text("✅ Approved: ${task['title']}")),
                             );
-                            _fetchCurrentTask(); // Refresh current tasks
+                            _fetchCurrentTask();
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("❌ Failed to assign task")),
@@ -200,14 +226,59 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
     _showTaskModal(task, showActions: false);
   }
 
-  Widget _buildHistoryCard(Map<String, String> task) {
+  Widget _buildHistoryCard(String title, String status, String volunteerName, String avatarUrl, String dateCompleted) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ListTile(
-          title: Text(task['title']!, style: const TextStyle(fontWeight: FontWeight.w500)),
-          subtitle: Text("Customer: ${task['customer']}"),
+        elevation: 1,
+        color: lavenderMist,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(radius: 18, backgroundImage: NetworkImage(avatarUrl)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Nunito',
+                          color: slateText,
+                        )),
+                    const SizedBox(height: 6),
+                    Text("Completed by $volunteerName on $dateCompleted",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: bodyText,
+                          fontFamily: 'Nunito',
+                        )),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  "Done",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Nunito',
+                    color: mutedNavy,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -233,9 +304,7 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
         actions: [
           IconButton(
             icon: const Icon(Icons.forum_outlined, size: 35, color: skyAsh),
-            onPressed: () {
-              // Navigate to messages
-            },
+            onPressed: () {},
           ),
           const SizedBox(width: 8),
         ],
@@ -320,16 +389,19 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
                     ),
                   ),
                 const SizedBox(height: 30),
-                const Text("History", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                ...completedTasks.map(_buildHistoryCard),
+                const Text("📖 Request History", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, fontFamily: 'Nunito', color: skyAsh)),
+                const SizedBox(height: 12),
+                ...completedTasks.map((task) => _buildHistoryCard(
+                      task['title']!,
+                      task['status']!,
+                      task['volunteer']!,
+                      task['avatarUrl']!,
+                      task['date']!,
+                    )),
               ],
             ),
       bottomNavigationBar: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
@@ -344,7 +416,7 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
 
 String _getGreetingMessage() {
   final hour = DateTime.now().hour;
-  const name = 'Heyt'; // Replace dynamically if needed
+  const name = 'Heyt';
 
   if (hour < 12) {
     return 'Good Morning, $name 👋';
