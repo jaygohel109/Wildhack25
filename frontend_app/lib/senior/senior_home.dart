@@ -18,24 +18,61 @@ class SeniorHomePage extends StatefulWidget {
 }
 
 class _SeniorHomePageState extends State<SeniorHomePage> {
+
+
   List<Map<String, dynamic>> activeTasks = [];
   List<Map<String, dynamic>> completedTasks = [];
   bool isLoadingActive = true;
   bool isLoadingCompleted = true;
+  Timer? _refreshActiveTasksTimer;
+  String firstName = "there"; // Default fallback
 
   final PageController _pageController = PageController();
   int _currentIndex = 0;
   Timer? _autoScrollTimer;
 
+  Future<void> fetchUserProfile() async {
+    final url = Uri.parse('http://localhost:8000/profile?user_id=${widget.userId}');
+    try {
+      final response = await http.get(url);
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['user_profile'] != null) {
+        setState(() {
+          firstName = data['user_profile']['first_name'] ?? 'there';
+        });
+      }
+    } catch (e) {
+      print('Error fetching user profile: $e');
+    }
+  }
+
+  String _getGreetingMessage() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning, $firstName';
+    } else if (hour < 17) {
+      return 'Good Afternoon, $firstName';
+    } else {
+      return 'Good Evening, $firstName';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    fetchUserProfile(); // 👈 Add this
     fetchActiveTasks();
     fetchCompletedTasks();
+
+    _refreshActiveTasksTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => fetchActiveTasks(),
+    );
   }
 
   @override
   void dispose() {
+    _refreshActiveTasksTimer?.cancel();
     _autoScrollTimer?.cancel();
     _pageController.dispose();
     super.dispose();
@@ -102,11 +139,11 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const ProfileDrawer(),
+      drawer: ProfileDrawer(userId: widget.userId), // ✅ Correct
       extendBody: true,
       backgroundColor: peachCream,
       appBar: AppBar(
-        leading: const ProfileMenu(),
+      leading: ProfileMenu(userId: widget.userId),  // ✅ Correct
         title: Text(
           _getGreetingMessage(),
           style: const TextStyle(
@@ -378,13 +415,4 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
     ];
     return months[month];
   }
-}
-
-String _getGreetingMessage() {
-  final hour = DateTime.now().hour;
-  const name = 'Jay';
-  if (hour < 12) return 'Good Morning, $name 👋';
-  if (hour < 17) return 'Good Afternoon, $name 🌤️';
-  if (hour < 20) return 'Good Evening, $name 🌇';
-  return 'Good Night, $name 🌙';
 }
