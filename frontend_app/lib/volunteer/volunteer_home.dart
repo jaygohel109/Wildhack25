@@ -26,10 +26,13 @@ class _VolunteerHomePageState extends State<VolunteerHomePage>
   final String baseUrl = "http://localhost:8000";
   bool isAnimating = false;
   bool isLoading = true;
+  String firstName = "Volunteer";  // Default value in case fetching fails
+
 
   @override
   void initState() {
     super.initState();
+    fetchUserProfile();  // Fetch user profile for firstName
     _fetchSuggestedTasks();
     _fetchCurrentTask();
     _fetchCompletedTasks();
@@ -44,6 +47,35 @@ class _VolunteerHomePageState extends State<VolunteerHomePage>
     _refreshTimer?.cancel();
     super.dispose();
   }
+
+  String _getGreetingMessage() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning, $firstName 👋';
+    } else if (hour < 17) {
+      return 'Good Afternoon, $firstName 🌤️';
+    } else if (hour < 20) {
+      return 'Good Evening, $firstName 🌇';
+    } else {
+      return 'Good Night, $firstName 🌙';
+    }
+  }
+
+
+Future<void> fetchUserProfile() async {
+  try {
+    final url = Uri.parse("http://localhost:8000/profile?user_id=${widget.userId}");
+    final response = await http.get(url);
+    final data = jsonDecode(response.body);
+    if (response.statusCode == 200 && data['user_profile'] != null) {
+      setState(() {
+        firstName = data['user_profile']['first_name'] ?? "Volunteer";  // Update firstName
+      });
+    }
+  } catch (e) {
+    print('Error fetching profile: $e');
+  }
+}
 
   Future<void> _fetchSuggestedTasks() async {
     try {
@@ -322,22 +354,21 @@ class _VolunteerHomePageState extends State<VolunteerHomePage>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: const ProfileDrawer(),
-      extendBody: true,
-      backgroundColor: peachCream,
-      appBar: AppBar(
-        leading: const ProfileMenu(),
-        title: Text(
-          _getGreetingMessage(),
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            fontFamily: 'Nunito',
-            color: skyAsh,
-          ),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+drawer: ProfileDrawer(userId: widget.userId), // ✅ Correct
+    extendBody: true,
+    backgroundColor: peachCream,
+    appBar: AppBar(
+leading: ProfileMenu(userId: widget.userId),  // ✅ Correct
+      title: Text(
+        _getGreetingMessage(),
+        style: const TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Nunito',
+          color: skyAsh,
         ),
         actions: [
           IconButton(
@@ -349,6 +380,19 @@ class _VolunteerHomePageState extends State<VolunteerHomePage>
         backgroundColor: sandBlush,
         elevation: 0,
       ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.forum_outlined, size: 35, color: skyAsh),
+          onPressed: () {
+            // Navigate to messages
+          },
+        ),
+        const SizedBox(width: 8),
+      ],
+      backgroundColor: sandBlush,
+      foregroundColor: Colors.white,
+      elevation: 0,
+    ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -559,20 +603,5 @@ class _VolunteerHomePageState extends State<VolunteerHomePage>
         ),
       ),
     );
-  }
-}
-
-String _getGreetingMessage() {
-  final hour = DateTime.now().hour;
-  const name = 'Heyt'; // Replace dynamically if needed
-
-  if (hour < 12) {
-    return 'Good Morning, $name 👋';
-  } else if (hour < 17) {
-    return 'Good Afternoon, $name 🌤️';
-  } else if (hour < 20) {
-    return 'Good Evening, $name 🌇';
-  } else {
-    return 'Good Night, $name 🌙';
   }
 }
