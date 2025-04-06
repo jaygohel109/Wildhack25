@@ -53,7 +53,7 @@ async def signup_user(username: str, password: str, role: int) -> dict:
         "role": role
     }
     result = await db["users"].insert_one(user_data)
-    return {"message": "User created successfully", "id": ObjectId(result.inserted_id)}
+    return {"message": "User created successfully", "id": str(result.inserted_id)}
 
 async def login_user(username: str, password: str) -> dict:
     user = await db["users"].find_one({"username": username})
@@ -72,7 +72,7 @@ async def login_user(username: str, password: str) -> dict:
 
 async def create_user_profile(profile: ProfileCreate):
     user = await db["users"].find_one({"_id": ObjectId(profile.user_id)})
-    
+
     if not user:
         return {"error": "User not found"}
     
