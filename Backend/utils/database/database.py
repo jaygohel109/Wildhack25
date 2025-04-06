@@ -1,7 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from dotenv import load_dotenv
-from typing import List
+from .tasks_model import Category
 from bson import ObjectId
 from passlib.context import CryptContext
 from urllib.parse import quote_plus
@@ -127,27 +127,28 @@ async def create_task(task: TasksRequest):
 
 
 async def get_matching_tasks(volunteer_id: str):
-    volunteer = await db["users"].find_one({"_id": volunteer_id})
-    if not volunteer:
+    user_volunteer = await db["users"].find_one({"_id": ObjectId(volunteer_id)})
+    profile_volunteer = await db["profiles"].find_one({"user_id": ObjectId(user_volunteer["_id"])})
+    if not profile_volunteer:
         return {"error": "Volunteer not found"}
 
-    skills = volunteer.get("skills", [])
-
+    skill_values = profile_volunteer.get("skills", [])  # Already integers: [1, 3, 5]
+    print(skill_values)
     cursor = db["tasks"].find({
-        "category": {"$in": skills},
-        "status": {"$in": ["in-progress"]}
+        "category": {"$in": skill_values},
+        "status": "open"
     })
 
     matching_tasks = []
     async for task in cursor:
         task["_id"] = str(task["_id"])
         task["created_by"] = str(task["created_by"])
-        print(task.get("volunteer_id"))
         if task.get("volunteer_id"):
             task["volunteer_id"] = str(task["volunteer_id"])
         matching_tasks.append(task)
 
     return {"matching_tasks": matching_tasks}
+
 
 async def get_active_tasks_by_user(user_id: str):
     pipeline = [
