@@ -42,6 +42,28 @@ client = AsyncIOMotorClient(
 db = client["wildhack"]  # Replace with your database name
 
 
+async def get_username(user_id: str):
+    try:
+        user = await db["users"].find_one({"_id": ObjectId(user_id)})
+        return {"name":user["username"]}
+    except Exception as e:
+        return {"error":"User does not exist"}
+
+async def get_profile(user_id: str):
+    try:
+        user_profile = await db["profiles"].find_one({"user_id": ObjectId(user_id)})
+
+        if not user_profile:
+            return {"error": "User Profile does not exist"}
+
+        # Convert ObjectIds to strings for frontend compatibility
+        user_profile["_id"] = str(user_profile["_id"])
+        user_profile["user_id"] = str(user_profile["user_id"])
+
+        return {"user_profile": user_profile}
+    except Exception as e:
+        return {"error": f"Failed to retrieve user profile: {str(e)}"}
+
 async def signup_user(username: str, password: str, role: int) -> dict:
     existing_user = await db["users"].find_one({"username": username})
     if existing_user:
@@ -129,6 +151,7 @@ async def create_task(task: TasksRequest):
 async def get_matching_tasks(volunteer_id: str):
     user_volunteer = await db["users"].find_one({"_id": ObjectId(volunteer_id)})
     profile_volunteer = await db["profiles"].find_one({"user_id": ObjectId(user_volunteer["_id"])})
+    print(profile_volunteer)
     if not profile_volunteer:
         return {"error": "Volunteer not found"}
 
