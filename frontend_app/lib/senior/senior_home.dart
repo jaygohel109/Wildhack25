@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:frontend_app/components/custom_bottom_nav_bar.dart';
 import 'package:frontend_app/components/custom_fab.dart';
 import 'package:frontend_app/components/profile_menu.dart';
+import 'package:frontend_app/senior/new_request_dialog.dart';
 
 import '../theme/theme_colors.dart';
 
 class SeniorHomePage extends StatelessWidget {
-  const SeniorHomePage({super.key});
+  final String userId;
+
+  const SeniorHomePage({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -180,10 +183,10 @@ class SeniorHomePage extends StatelessWidget {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: const CustomFloatingActionButton(
-        onPressed: _onNewRequest,
-      ),
-      bottomNavigationBar: ClipRRect(
+      floatingActionButton: FloatingActionButton(
+      onPressed: () => _onNewRequest(context, userId), // Pass userId here
+      child: const Icon(Icons.add),
+),      bottomNavigationBar: ClipRRect(
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -199,9 +202,14 @@ class SeniorHomePage extends StatelessWidget {
     );
   }
 
-  static void _onNewRequest() {
-    // TODO: Implement navigation
-  }
+static void _onNewRequest(BuildContext context, String userId) {
+  showDialog(
+    context: context,
+    builder: (_) => NewRequestDialog(
+      userId: userId
+    ),
+  );
+}
 
   Widget _buildHistoryCard(String title, String status, String volunteerName,
       String avatarUrl, String dateCompleted) {
