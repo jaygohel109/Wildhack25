@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:frontend_app/profile/my-profile.dart';
 import 'package:http/http.dart' as http;
 import '../senior/senior_home.dart';
 import '../volunteer/volunteer_home.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -20,10 +22,10 @@ class _SignInPageState extends State<SignInPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  final String baseUrl = 'http://localhost:8000'; // Use IP if running on emulator/device
+  final String baseUrl = 'http://localhost:8000';
 
   int getRoleInt(String roleLabel) {
-    return roleLabel == 'Senior' ? 1 : 2; // Updated to match backend role values
+    return roleLabel == 'Senior' ? 1 : 2;
   }
 
   Future<void> handleSubmit() async {
@@ -43,19 +45,22 @@ class _SignInPageState extends State<SignInPage> {
       );
 
       final responseData = jsonDecode(response.body);
-    
+
       if (response.statusCode == 200) {
         if (isSignUp) {
-          setState(() {
-            isSignUp = false;
-            passwordController.clear();
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Account created! Please log in."),
-              backgroundColor: Colors.green,
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProfilePage(
+                userData: {
+                  "email": payload["username"], // Assuming email == username
+                  "role": payload["role"],
+                  "id": responseData['id'] ?? "",
+                },
+              ),
             ),
           );
+
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -75,13 +80,13 @@ class _SignInPageState extends State<SignInPage> {
               context,
               MaterialPageRoute(builder: (_) => const VolunteerHomePage()),
             );
-          } else {
-            throw Exception("Unknown role returned.");
           }
         }
       } else {
         final detail = responseData['detail'];
-        if (isSignUp && detail != null && detail.toLowerCase().contains("exists")) {
+        if (isSignUp &&
+            detail != null &&
+            detail.toLowerCase().contains("exists")) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("User already exists"),
@@ -111,73 +116,109 @@ class _SignInPageState extends State<SignInPage> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF80D0C7), Color(0xFF13547A)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [
+              Color.fromARGB(255, 255, 196, 156),
+              Color.fromARGB(255, 237, 237, 237), // soft white
+              // Color(0xFFF3E8FF), // pastel lavender
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
           child: Center(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 500),
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: SingleChildScrollView(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Center(
-                      child: Text(
-                        isSignUp
-                            ? "Create Your KindConnect Account"
-                            : "Let's Get You Connected",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: isTablet ? 30 : 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                    SvgPicture.asset(
+                      'assets/images/signup.svg',
+                      height: 300,
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Welcome to KindConnect!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFdf9d72),
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Center(
-                      child: Text(
-                        "✨ Who Are You Today?\nChoose whether you’re here to receive help or to lend a hand.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.85),
+                    // Text(
+                    //   "How can we help you today?",
+                    //   textAlign: TextAlign.center,
+                    //   style: TextStyle(
+                    //     fontFamily: 'Nunito',
+                    //     fontSize: 16,
+                    //     color: Colors.white.withOpacity(0.9),
+                    //   ),
+                    // ),
+                    if (isSignUp) ...[
+                      _buildLabel("Select Role"),
+                      Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFFdf9d72).withOpacity(1),
+                            width: 1,
+                          ),
+                          // boxShadow: [
+                          //   BoxShadow(
+                          //     color: Colors.black.withOpacity(0.20),
+                          //     blurRadius: 5,
+                          //     offset: const Offset(0, 3),
+                          //   ),
+                          // ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18), // Equal left/right padding
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              borderRadius: BorderRadius.circular(12),
+                              value: selectedRole,
+                              isExpanded: true,
+                              icon: const Icon(Icons.keyboard_arrow_down,
+                                  color: Color(0xFFdf9d72)),
+                              dropdownColor: Colors.white,
+                              style: const TextStyle(
+                                fontFamily: 'Nunito',
+                                fontSize: 16,
+                                color: Color(0xFFdf9d72),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'Senior',
+                                  child: Text('Senior',
+                                      style: TextStyle(fontFamily: 'Nunito')),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Volunteer',
+                                  child: Text('Volunteer',
+                                      style: TextStyle(fontFamily: 'Nunito')),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedRole = value!;
+                                });
+                              },
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 30),
+                    ],
 
-                    _buildLabel("Select Role"),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: DropdownButtonFormField<String>(
-                        value: selectedRole,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'Senior', child: Text('Senior')),
-                          DropdownMenuItem(value: 'Volunteer', child: Text('Volunteer')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            selectedRole = value!;
-                          });
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
+                    // const SizedBox(height: 20),
                     _buildTextField(
                       controller: emailController,
                       label: "Email",
@@ -186,7 +227,6 @@ class _SignInPageState extends State<SignInPage> {
                       keyboardType: TextInputType.emailAddress,
                     ),
                     _buildPasswordField(),
-
                     if (!isSignUp)
                       Padding(
                         padding: const EdgeInsets.only(top: 6, bottom: 12),
@@ -207,44 +247,40 @@ class _SignInPageState extends State<SignInPage> {
                           ],
                         ),
                       ),
-
                     const SizedBox(height: 20),
-
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: handleSubmit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF13547A),
-                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: Text(
-                          isSignUp ? "Create Account" : "Continue",
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ElevatedButton(
+                      onPressed: handleSubmit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor:
+                            const Color.fromARGB(255, 255, 174, 74),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
                       ),
+                      child: Text(
+                        isSignUp ? "Create Account" : "Continue",
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w800),
+                      ),
                     ),
-
-                    const SizedBox(height: 25),
-
-                    Center(
-                      child: TextButton(
-                        onPressed: () {
-                          setState(() {
-                            isSignUp = !isSignUp;
-                          });
-                        },
-                        child: Text(
-                          isSignUp
-                              ? "Already have an account? Sign In"
-                              : "Don't have an account? Create one",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
+                    // const SizedBox(height: 25),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          isSignUp = !isSignUp;
+                        });
+                      },
+                      child: Text(
+                        isSignUp
+                            ? "Already have an account? Sign In"
+                            : "Don't have an account? Create one",
+                        style: const TextStyle(
+                          color: Color(0xFFdf9d72),
+                          fontSize: 16,
+                          fontFamily: 'Nunito',
                         ),
                       ),
                     )
@@ -263,7 +299,12 @@ class _SignInPageState extends State<SignInPage> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.white),
+        style: const TextStyle(
+          fontSize: 20,
+          color: Color.fromARGB(255, 0, 0, 0),
+          fontFamily: 'Nunito',
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -276,7 +317,7 @@ class _SignInPageState extends State<SignInPage> {
     TextInputType? keyboardType,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 20),
+      padding: const EdgeInsets.only(top: 10, bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -284,13 +325,42 @@ class _SignInPageState extends State<SignInPage> {
           TextField(
             controller: controller,
             keyboardType: keyboardType,
-            style: const TextStyle(fontSize: 16),
+            style: const TextStyle(
+              fontSize: 16,
+              fontFamily: 'Nunito',
+              color: Color(0xFFdf9d72),
+            ),
             decoration: InputDecoration(
               filled: true,
               fillColor: Colors.white.withOpacity(0.9),
               hintText: hintText,
-              prefixIcon: Icon(icon),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              hintStyle: const TextStyle(
+                fontFamily: 'Nunito',
+                color: Color(0xFFdf9d72),
+              ),
+              prefixIcon: Icon(
+                icon,
+                color: const Color(0xFF13547A), // custom icon color
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFFdf9d72), // unfocused border
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFFdf9d72),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFFdf9d72), // 👈 your custom border color
+                  width: 2,
+                ),
+              ),
             ),
           ),
         ],
@@ -308,21 +378,53 @@ class _SignInPageState extends State<SignInPage> {
           TextField(
             controller: passwordController,
             obscureText: !showPassword,
-            style: const TextStyle(fontSize: 16),
+            style: const TextStyle(
+              fontSize: 16,
+              fontFamily: 'Nunito',
+              color: Colors.black,
+            ),
             decoration: InputDecoration(
               filled: true,
               fillColor: Colors.white.withOpacity(0.9),
               hintText: "Enter your password",
-              prefixIcon: const Icon(Icons.lock_outline),
+              hintStyle: const TextStyle(
+                fontFamily: 'Nunito',
+                color: Color(0xFFdf9d72),
+              ),
+              prefixIcon: const Icon(
+                Icons.lock_outline,
+                color: Color(0xFF13547A), // Custom icon color
+              ),
               suffixIcon: IconButton(
-                icon: Icon(showPassword ? Icons.visibility : Icons.visibility_off),
+                icon: Icon(
+                  showPassword ? Icons.visibility : Icons.visibility_off,
+                  color: const Color(0xFF13547A), // Matching icon color
+                ),
                 onPressed: () {
                   setState(() {
                     showPassword = !showPassword;
                   });
                 },
               ),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFFdf9d72),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFFdf9d72),
+                ),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+                borderSide: BorderSide(
+                  color: Color(0xFFdf9d72), // Your custom color when focused
+                  width: 2,
+                ),
+              ),
             ),
           ),
         ],
