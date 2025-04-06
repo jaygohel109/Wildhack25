@@ -22,6 +22,7 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
   List<Map<String, dynamic>> completedTasks = [];
   bool isLoadingActive = true;
   bool isLoadingCompleted = true;
+  Timer? _refreshActiveTasksTimer;
 
   final PageController _pageController = PageController();
   int _currentIndex = 0;
@@ -32,10 +33,16 @@ class _SeniorHomePageState extends State<SeniorHomePage> {
     super.initState();
     fetchActiveTasks();
     fetchCompletedTasks();
+
+    _refreshActiveTasksTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => fetchActiveTasks(),
+    );
   }
 
   @override
   void dispose() {
+    _refreshActiveTasksTimer?.cancel();
     _autoScrollTimer?.cancel();
     _pageController.dispose();
     super.dispose();
