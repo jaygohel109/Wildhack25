@@ -25,7 +25,7 @@ class TasksRequest(BaseModel):
     priority: Priority
     preferable_gender: Gender
     description: str
-    category: Category
+    category: Optional[Category] = None
     status: str = "open"
     created_by: str  # required to embed into correct user
     

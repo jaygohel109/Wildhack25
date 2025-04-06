@@ -2,11 +2,12 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from dotenv import load_dotenv
 from typing import List
-import urllib.parse
 from bson import ObjectId
 from passlib.context import CryptContext
 from urllib.parse import quote_plus
-import certifi  # Add this import
+import certifi
+
+from utils.gemini import classify_task_category  # Add this import
 from .auth_util import hash_password, verify_password
 from .model import ProfileCreate
 from datetime import datetime
@@ -109,12 +110,17 @@ async def create_task(task: TasksRequest):
     task_data["volunteer_id"] = None
     task_data["created_by"] = ObjectId(task_data["created_by"])
 
+    # Call Gemini to classify category from description
+    predicted_category = await classify_task_category(task_data["description"])
+    task_data["category"] = predicted_category.value  # Store enum value
+
     result = await db["tasks"].insert_one(task_data)
 
     if result.inserted_id:
         return {
             "message": "Task created successfully",
-            "task_id": str(result.inserted_id)
+            "task_id": str(result.inserted_id),
+            "predicted_category": predicted_category.name
         }
     else:
         return {"error": "Task creation failed"}
