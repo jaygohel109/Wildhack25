@@ -42,7 +42,7 @@ class ProfileCreate(BaseModel):
     preference: Optional[List[Availability]] = None
     
     # For volunteers (role 2)
-    skills: Optional[List[str]] = None
+    skills: Optional[List[int]] = None
     age: Optional[int] = None
     gender: Optional[str] = None
     availability: Optional[List[Availability]] = None
@@ -51,3 +51,4 @@ class ProfileCreate(BaseModel):
 class ForgotPasswordRequest(BaseModel):
     username: str
     new_password: str
+
