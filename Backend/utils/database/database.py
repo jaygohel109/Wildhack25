@@ -288,6 +288,27 @@ async def assign_task_to_volunteer(task_id: str, volunteer_id: str):
     else:
         return {"error": "Task could not be assigned (already taken or not found)"}
 
+async def get_current_tasks_of_volunteer(volunteer_id: str):
+    cursor = db["tasks"].find({
+        "volunteer_id": ObjectId(volunteer_id),
+        "status": "in-progress"
+    })
+
+    current_tasks = []
+    async for task in cursor:
+        current_tasks.append({
+            "_id": str(task["_id"]),
+            "issue": task.get("issue"),
+            "description": task.get("description"),
+            "priority": task.get("priority"),
+            "category": task.get("category"),
+            "status": task.get("status"),
+            "created_by": str(task.get("created_by")),
+            "volunteer_id": str(task.get("volunteer_id"))
+        })
+
+    return {"current_tasks": current_tasks}
+    
 async def get_task_with_volunteer(task_id: str):
     task = await db["tasks"].find_one({"_id": ObjectId(task_id)})
     if not task:
