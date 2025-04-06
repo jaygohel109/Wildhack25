@@ -16,14 +16,9 @@ class _ProfilePageState extends State<ProfilePage> {
   final Map<String, dynamic> profileData = {};
   final String baseUrl = "http://localhost:8000";
 
-  // Array controllers
+  // Skills controllers
   List<String> skills = [];
   final TextEditingController skillController = TextEditingController();
-
-  // Availability structured by day + time
-  List<Map<String, String>> availability = [];
-  String? selectedDay;
-  final TextEditingController timeRangeController = TextEditingController();
 
   // Date picker
   DateTime? selectedDOB;
@@ -153,94 +148,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildAvailabilityPicker() {
-    List<String> days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday'
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Availability",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: selectedDay,
-                  decoration: const InputDecoration(
-                    labelText: "Day",
-                    border: OutlineInputBorder(),
-                  ),
-                  items: days
-                      .map((day) => DropdownMenuItem(
-                            value: day,
-                            child: Text(day),
-                          ))
-                      .toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      selectedDay = val;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: timeRangeController,
-                  decoration: const InputDecoration(
-                    labelText: "Time (e.g., 9 AM - 12 PM)",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () {
-                  if (selectedDay != null && timeRangeController.text.isNotEmpty) {
-                    setState(() {
-                      availability.add({
-                        'day': selectedDay!,
-                        'time': timeRangeController.text.trim()
-                      });
-                      profileData['availability'] = availability;
-                      timeRangeController.clear();
-                    });
-                  }
-                },
-              )
-            ],
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 6,
-            children: availability
-                .map((entry) => Chip(
-                      label: Text("${entry['day']} - ${entry['time']}"),
-                      onDeleted: () {
-                        setState(() {
-                          availability.remove(entry);
-                          profileData['availability'] = availability;
-                        });
-                      },
-                    ))
-                .toList(),
-          )
-        ],
-      ),
-    );
-  }
-
   Future<void> _submitProfile() async {
     _formKey.currentState?.save();
 
@@ -290,14 +197,30 @@ class _ProfilePageState extends State<ProfilePage> {
               _buildTextField("First Name", "first_name"),
               _buildTextField("Last Name", "last_name"),
               _buildTextField("Phone", "phone", inputType: TextInputType.phone),
-              _buildTextField("Gender", "gender"),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: "Gender",
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: "Male", child: Text("Male")),
+                    DropdownMenuItem(value: "Female", child: Text("Female")),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      profileData["gender"] = val;
+                    }
+                  },
+                ),
+              ),
               _buildTextField("Location", "location"),
               if (role == 1) ...[
                 _buildDOBPicker(),
               ] else if (role == 2) ...[
                 _buildArrayInput("Skills", skillController, skills, "skills"),
                 _buildTextField("Age", "age", inputType: TextInputType.number),
-                _buildAvailabilityPicker(),
               ],
               const SizedBox(height: 20),
               ElevatedButton(
