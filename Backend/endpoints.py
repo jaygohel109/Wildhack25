@@ -2,7 +2,7 @@ from utils.web_command_handler import WebHandler
 from utils.logging_module import setup_logger
 from fastapi import Request
 from utils.database.model import SignupRequest, LoginRequest, ProfileCreate, ForgotPasswordRequest
-from utils.database.database import get_active_tasks_by_user, get_completed_tasks_by_user, signup_user, login_user, create_user_profile, forgot_password, create_task, assign_task_to_volunteer, get_task_with_volunteer, get_matching_tasks, complete_task, get_current_tasks_of_volunteer
+from utils.database.database import get_active_tasks_by_user, get_completed_tasks_by_user, signup_user, login_user, create_user_profile, forgot_password, create_task, assign_task_to_volunteer, get_task_with_volunteer, get_matching_tasks, complete_task, get_current_tasks_of_volunteer, get_profile, get_username, get_completed_tasks_by_volunteer
 from utils.database.tasks_model import TasksRequest, AssignTasks
 from fastapi import Query
 
@@ -17,6 +17,20 @@ class Endpoints(WebHandler):
     def GET_world(self):
         return {"value: ": "Hello World"}  
     
+    async def GET_username(self, user_id):
+        try:
+            result = await get_username(user_id)
+            return result
+        except Exception as e:
+            return {"error": "Unable to get username"}
+        
+    async def GET_profile(self, user_id):
+        try:
+            result = await get_profile(user_id)
+            return result
+        except Exception as e:
+            return {"error": "User profile does not exist"}
+         
     async def POST_signup(self, data: SignupRequest):
         try:
 
@@ -114,6 +128,14 @@ class Endpoints(WebHandler):
             self.logger.error(f"Error fetching completed tasks: {str(e)}")
             return {"error": "Unable to retrieve completed tasks"}
 
+    async def GET_history_of_volunteers(self, user_id: str):
+        try:
+            self.logger.info(f"Fetching completed tasks of user id: {user_id}" )
+            result = await get_completed_tasks_by_volunteer(user_id)
+            return result
+        except Exception as e:
+            self.logger.error(f"Error fetching completed tasks: {str(e)}")
+            return {"error": "Volunteer fetching completed tasks error"}
     async def GET_current_volunteer_tasks(self, user_id: str):
         try:
             self.logger.info("Getting in progress tasks of volunteer")

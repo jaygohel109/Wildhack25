@@ -42,6 +42,28 @@ client = AsyncIOMotorClient(
 db = client["wildhack"]  # Replace with your database name
 
 
+async def get_username(user_id: str):
+    try:
+        user = await db["users"].find_one({"_id": ObjectId(user_id)})
+        return {"name":user["username"]}
+    except Exception as e:
+        return {"error":"User does not exist"}
+
+async def get_profile(user_id: str):
+    try:
+        user_profile = await db["profiles"].find_one({"user_id": ObjectId(user_id)})
+
+        if not user_profile:
+            return {"error": "User Profile does not exist"}
+
+        # Convert ObjectIds to strings for frontend compatibility
+        user_profile["_id"] = str(user_profile["_id"])
+        user_profile["user_id"] = str(user_profile["user_id"])
+
+        return {"user_profile": user_profile}
+    except Exception as e:
+        return {"error": f"Failed to retrieve user profile: {str(e)}"}
+
 async def signup_user(username: str, password: str, role: int) -> dict:
     existing_user = await db["users"].find_one({"username": username})
     if existing_user:
@@ -129,6 +151,7 @@ async def create_task(task: TasksRequest):
 async def get_matching_tasks(volunteer_id: str):
     user_volunteer = await db["users"].find_one({"_id": ObjectId(volunteer_id)})
     profile_volunteer = await db["profiles"].find_one({"user_id": ObjectId(user_volunteer["_id"])})
+    print(profile_volunteer)
     if not profile_volunteer:
         return {"error": "Volunteer not found"}
 
@@ -204,6 +227,27 @@ async def get_active_tasks_by_user(user_id: str):
 
     results = await db["tasks"].aggregate(pipeline).to_list(length=None)
     return {"active_tasks": results}
+
+async def get_completed_tasks_by_volunteer(volunteer_id: str):
+    cursor = db["tasks"].find({
+        "volunteer_id": ObjectId(volunteer_id),
+        "status": "completed"
+    })
+
+    completed_tasks = []
+    async for task in cursor:
+        completed_tasks.append({
+            "_id": str(task["_id"]),
+            "issue": task.get("issue"),
+            "description": task.get("description"),
+            "priority": task.get("priority"),
+            "category": task.get("category"),
+            "status": task.get("status"),
+            "created_by": str(task.get("created_by")),
+            "volunteer_id": str(task.get("volunteer_id"))
+        })
+
+    return {"completed_tasks": completed_tasks}
 
 async def get_completed_tasks_by_user(user_id: str):
     pipeline = [
@@ -333,7 +377,7 @@ async def get_task_with_volunteer(task_id: str):
             "gender": volunteer["gender"]
         } if volunteer else None
     }
-    
+
 async def complete_task(task_id: str):
     result = await db["tasks"].update_one(
         {
