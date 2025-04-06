@@ -2,7 +2,7 @@ from utils.web_command_handler import WebHandler
 from utils.logging_module import setup_logger
 from fastapi import Request
 from utils.database.model import SignupRequest, LoginRequest, ProfileCreate, ForgotPasswordRequest
-from utils.database.database import get_active_tasks_by_user, get_completed_tasks_by_user, signup_user, login_user, create_user_profile, forgot_password, create_task, assign_task_to_volunteer, get_task_with_volunteer, get_matching_tasks, complete_task, get_current_tasks_of_volunteer, get_profile, get_username, get_completed_tasks_by_volunteer
+from utils.database.database import deny_task, get_active_tasks_by_user, get_completed_tasks_by_user, signup_user, login_user, create_user_profile, forgot_password, create_task, assign_task_to_volunteer, get_task_with_volunteer, get_matching_tasks, complete_task, get_current_tasks_of_volunteer, get_profile, get_username, get_completed_tasks_by_volunteer
 from utils.database.tasks_model import TasksRequest, AssignTasks
 from fastapi import Query
 
@@ -151,6 +151,14 @@ class Endpoints(WebHandler):
         except Exception as e:
             self.logger.error(f"Unable to change the status to complete in task: {e}")
             return {"error": "Unable to change the status to complete in task"}
+    
+    async def POST_deny_task(self, task_id: str):
+        try:
+            result = await deny_task(task_id)
+            return result
+        except Exception as e:
+            self.logger.error(f"Unable to change the status to deny in task: {e}")
+            return {"error": "Unable to change the status to deny in task"}
         
 if __name__ == "__main__":
     logger = setup_logger('endpoints.log')

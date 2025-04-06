@@ -378,6 +378,23 @@ async def get_task_with_volunteer(task_id: str):
         } if volunteer else None
     }
 
+async def deny_task(task_id: str):
+    result = await db["tasks"].update_one(
+        {
+            "_id": ObjectId(task_id),
+            "status": "in-progress"
+        },
+        {
+            "$set": {
+                "status": "open"
+            }
+        }
+    )
+    if result.modified_count == 1:
+        return {"message": "Task denied successfully"}
+    else:
+        return {"error": "Task could not be denied (already taken or not found)"}
+    
 async def complete_task(task_id: str):
     result = await db["tasks"].update_one(
         {
