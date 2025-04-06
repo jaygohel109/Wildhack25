@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../components/task_flashcard.dart';
@@ -15,10 +17,12 @@ class VolunteerHomePage extends StatefulWidget {
   State<VolunteerHomePage> createState() => _VolunteerHomePageState();
 }
 
-class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProviderStateMixin {
+class _VolunteerHomePageState extends State<VolunteerHomePage>
+    with TickerProviderStateMixin {
   List<Map<String, String>> suggestedTasks = [];
   List<Map<String, String>> currentTasks = [];
   List<Map<String, String>> completedTasks = [];
+  Timer? _refreshTimer;
   final String baseUrl = "http://localhost:8000";
   bool isAnimating = false;
   bool isLoading = true;
@@ -28,26 +32,41 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
     super.initState();
     _fetchSuggestedTasks();
     _fetchCurrentTask();
+    _fetchCompletedTasks();
+
+    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      _fetchSuggestedTasks();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchSuggestedTasks() async {
     try {
-      final uri = Uri.parse("$baseUrl/matching_tasks?volunteer_id=${widget.userId}");
+      final uri =
+          Uri.parse("$baseUrl/matching_tasks?volunteer_id=${widget.userId}");
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final List<dynamic> tasks = data["matching_tasks"];
+        final newTasks = tasks.map<Map<String, String>>((task) {
+          return {
+            "title": task["issue"] ?? "Untitled Task",
+            "subtitle": task["description"] ?? "No Description",
+            "task_id": task["_id"],
+          };
+        }).toList();
 
-        setState(() {
-          suggestedTasks = tasks.map<Map<String, String>>((task) {
-            return {
-              "title": task["issue"] ?? "Untitled Task",
-              "subtitle": task["description"] ?? "No Description",
-              "task_id": task["_id"],
-            };
-          }).toList();
-          isLoading = false;
-        });
+        if (!listEquals(newTasks, suggestedTasks)) {
+          setState(() {
+            suggestedTasks = newTasks;
+          });
+        }
+        setState(() => isLoading = false);
       } else {
         throw Exception("Failed to load suggested tasks");
       }
@@ -59,7 +78,8 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
 
   Future<void> _fetchCurrentTask() async {
     try {
-      final uri = Uri.parse("$baseUrl/current_volunteer_tasks?user_id=${widget.userId}");
+      final uri = Uri.parse(
+          "$baseUrl/current_volunteer_tasks?user_id=${widget.userId}");
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -82,7 +102,34 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
     }
   }
 
-  void _onSwipeUp() async {
+  Future<void> _fetchCompletedTasks() async {
+    try {
+      final uri =
+          Uri.parse("$baseUrl/history_of_volunteers?user_id=${widget.userId}");
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> tasks = data["completed_tasks"];
+
+        setState(() {
+          completedTasks = tasks.map<Map<String, String>>((task) {
+            return {
+              "title": task["issue"] ?? "Untitled Task",
+              "status": task["status"] ?? "Completed",
+              "volunteer": task["volunteer"]?["name"] ?? "Unknown",
+              "avatarUrl": "https://i.pravatar.cc/300?img=20",
+              "date":
+                  "Apr 4, 2025" // Replace with real date from API if available
+            };
+          }).toList();
+        });
+      }
+    } catch (e) {
+      print("Error fetching completed tasks: $e");
+    }
+  }
+
+  void _onSwipeDown() async {
     if (suggestedTasks.isNotEmpty && !isAnimating) {
       setState(() => isAnimating = true);
       await Future.delayed(const Duration(milliseconds: 300));
@@ -98,7 +145,7 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: peachCream,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -118,9 +165,17 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                Text(task['title']!, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Text(task['title']!,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Nunito',
+                      color: skyAsh,
+                    )),
                 const SizedBox(height: 12),
-                Text(task['subtitle']!, style: const TextStyle(fontSize: 16)),
+                Text(task['subtitle']!,
+                    style: const TextStyle(
+                        fontSize: 16, fontFamily: 'Nunito', color: slateText)),
                 const Spacer(),
                 Visibility(
                   visible: showActions,
@@ -149,21 +204,25 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
 
                           if (response.statusCode == 200) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("✅ Approved: ${task['title']}")),
+                              SnackBar(
+                                  content:
+                                      Text("✅ Approved: ${task['title']}")),
                             );
                             _fetchCurrentTask(); // Refresh current tasks
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("❌ Failed to assign task")),
+                              const SnackBar(
+                                  content: Text("❌ Failed to assign task")),
                             );
                           }
                         },
                         icon: const Icon(Icons.check),
                         label: const Text("Approve"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: sunsetCoral,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 14),
                         ),
                       ),
                       ElevatedButton.icon(
@@ -173,15 +232,17 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
                             suggestedTasks.remove(task);
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("❌ Rejected: ${task['title']}")),
+                            SnackBar(
+                                content: Text("❌ Rejected: ${task['title']}")),
                           );
                         },
                         icon: const Icon(Icons.close),
                         label: const Text("Reject"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor: Colors.grey,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 14),
                         ),
                       ),
                     ],
@@ -200,14 +261,62 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
     _showTaskModal(task, showActions: false);
   }
 
-  Widget _buildHistoryCard(Map<String, String> task) {
+  Widget _buildHistoryCard(String title, String status, String volunteerName,
+      String avatarUrl, String dateCompleted) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ListTile(
-          title: Text(task['title']!, style: const TextStyle(fontWeight: FontWeight.w500)),
-          subtitle: Text("Customer: ${task['customer']}"),
+        elevation: 1,
+        color: lavenderMist,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                  radius: 18, backgroundImage: NetworkImage(avatarUrl)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Nunito',
+                          color: slateText,
+                        )),
+                    const SizedBox(height: 6),
+                    Text("Completed by $volunteerName on $dateCompleted",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: bodyText,
+                          fontFamily: 'Nunito',
+                        )),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  "Done",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Nunito',
+                    color: mutedNavy,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -233,14 +342,11 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
         actions: [
           IconButton(
             icon: const Icon(Icons.forum_outlined, size: 35, color: skyAsh),
-            onPressed: () {
-              // Navigate to messages
-            },
+            onPressed: () {},
           ),
           const SizedBox(width: 8),
         ],
         backgroundColor: sandBlush,
-        foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: isLoading
@@ -248,18 +354,30 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                const Text("Suggested Tasks", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const Text("Suggested Tasks",
+                    style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Nunito',
+                        color: skyAsh)),
                 const SizedBox(height: 16),
                 SizedBox(
                   height: 250,
                   child: suggestedTasks.isEmpty
-                      ? const Center(child: Text("No suggested tasks at the moment."))
+                      ? const Center(
+                          child: Text("No suggested tasks at the moment."))
                       : Stack(
                           clipBehavior: Clip.none,
-                          children: suggestedTasks.asMap().entries.toList().reversed.map((entry) {
+                          children: suggestedTasks
+                              .asMap()
+                              .entries
+                              .toList()
+                              .reversed
+                              .map((entry) {
                             final index = entry.key;
                             final task = entry.value;
-                            final int offset = suggestedTasks.length - 1 - index;
+                            final int offset =
+                                suggestedTasks.length - 1 - index;
                             final bool isTop = index == 0;
                             final bool isAnimatingTop = isTop && isAnimating;
 
@@ -272,45 +390,136 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
                               child: AnimatedOpacity(
                                 duration: const Duration(milliseconds: 300),
                                 opacity: isAnimatingTop ? 0.0 : 1.0,
-                                child: TaskFlashCard(
-                                  title: task['title']!,
-                                  subtitle: task['subtitle']!,
-                                  elevation: 5 - offset.toDouble(),
-                                  isTopCard: isTop,
-                                  onSwipeUp: _onSwipeUp,
+                                child: GestureDetector(
+                                  onPanUpdate: (details) {
+                                    if (details.delta.dy > 10 && isTop) {
+                                      _onSwipeDown();
+                                    }
+                                  },
                                   onTap: () => _showTaskModal(task),
+                                  child: Card(
+                                    color: pastelPeach,
+                                    elevation: 5 - offset.toDouble(),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(18),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            "Task Title",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontFamily: 'Nunito',
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            task['title'] ?? "-",
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              fontFamily: 'Nunito',
+                                              color: slateText,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 14),
+                                          const Text(
+                                            "Description",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontFamily: 'Nunito',
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            task['subtitle'] ?? "-",
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontFamily: 'Nunito',
+                                              color: bodyText,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 14),
+                                          const Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
+                                            children: [
+                                              Icon(Icons.swipe_down,
+                                                  color: mutedNavy),
+                                              SizedBox(width: 6),
+                                              Text(
+                                                "Swipe down to skip",
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontFamily: 'Nunito',
+                                                  fontWeight: FontWeight.w500,
+                                                  color: mutedNavy,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
                           }).toList(),
                         ),
                 ),
-                const SizedBox(height: 40),
-                const Text("Current Task", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                const Text("Current Task",
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Nunito',
+                        color: skyAsh)),
                 const SizedBox(height: 10),
                 if (currentTasks.isNotEmpty)
                   SizedBox(
-                    height: 160,
+                    height: 150,
+                    width: 160,
                     child: PageView.builder(
                       itemCount: currentTasks.length,
-                      controller: PageController(viewportFraction: 0.9),
+                      controller: PageController(viewportFraction: 1),
                       itemBuilder: (context, index) {
                         final task = currentTasks[index];
                         return GestureDetector(
                           onTap: () => _showCurrentTaskModal(task),
                           child: Card(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            color: Colors.orange[100],
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                            color: lavenderMist,
                             child: Padding(
                               padding: const EdgeInsets.all(16.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.assignment_turned_in, size: 30),
+                                  const Icon(Icons.assignment_turned_in,
+                                      size: 30, color: sunsetCoral),
                                   const SizedBox(height: 8),
-                                  Text(task['title']!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  Text(task['title']!,
+                                      style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Nunito')),
                                   const SizedBox(height: 6),
-                                  Text(task['subtitle']!, style: const TextStyle(fontSize: 14)),
+                                  Text(task['subtitle']!,
+                                      style: const TextStyle(
+                                          fontSize: 14, fontFamily: 'Nunito')),
                                 ],
                               ),
                             ),
@@ -320,9 +529,20 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
                     ),
                   ),
                 const SizedBox(height: 30),
-                const Text("History", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const Text("History",
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Nunito',
+                        color: skyAsh)),
                 const SizedBox(height: 10),
-                ...completedTasks.map(_buildHistoryCard),
+                ...completedTasks.map((task) => _buildHistoryCard(
+                      task['title']!,
+                      task['status']!,
+                      task['volunteer']!,
+                      task['avatarUrl']!,
+                      task['date']!,
+                    )),
               ],
             ),
       bottomNavigationBar: ClipRRect(
