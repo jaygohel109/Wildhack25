@@ -26,13 +26,12 @@ class _VolunteerHomePageState extends State<VolunteerHomePage>
   final String baseUrl = "http://localhost:8000";
   bool isAnimating = false;
   bool isLoading = true;
-  String firstName = "Volunteer";  // Default value in case fetching fails
-
+  String firstName = "Volunteer"; // Default value in case fetching fails
 
   @override
   void initState() {
     super.initState();
-    fetchUserProfile();  // Fetch user profile for firstName
+    fetchUserProfile(); // Fetch user profile for firstName
     _fetchSuggestedTasks();
     _fetchCurrentTask();
     _fetchCompletedTasks();
@@ -61,21 +60,22 @@ class _VolunteerHomePageState extends State<VolunteerHomePage>
     }
   }
 
-
-Future<void> fetchUserProfile() async {
-  try {
-    final url = Uri.parse("http://localhost:8000/profile?user_id=${widget.userId}");
-    final response = await http.get(url);
-    final data = jsonDecode(response.body);
-    if (response.statusCode == 200 && data['user_profile'] != null) {
-      setState(() {
-        firstName = data['user_profile']['first_name'] ?? "Volunteer";  // Update firstName
-      });
+  Future<void> fetchUserProfile() async {
+    try {
+      final url =
+          Uri.parse("http://localhost:8000/profile?user_id=${widget.userId}");
+      final response = await http.get(url);
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['user_profile'] != null) {
+        setState(() {
+          firstName = data['user_profile']['first_name'] ??
+              "Volunteer"; // Update firstName
+        });
+      }
+    } catch (e) {
+      print('Error fetching profile: $e');
     }
-  } catch (e) {
-    print('Error fetching profile: $e');
   }
-}
 
   Future<void> _fetchSuggestedTasks() async {
     try {
@@ -209,7 +209,6 @@ Future<void> fetchUserProfile() async {
                     style: const TextStyle(
                         fontSize: 16, fontFamily: 'Nunito', color: slateText)),
                 const Spacer(),
-                
                 Visibility(
                   visible: true,
                   maintainSize: true,
@@ -238,12 +237,15 @@ Future<void> fetchUserProfile() async {
 
                             if (response.statusCode == 200) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("✅ Approved: ${task['title']}")),
+                                SnackBar(
+                                    content:
+                                        Text("✅ Approved: ${task['title']}")),
                               );
                               _fetchCurrentTask();
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("❌ Failed to assign task")),
+                                const SnackBar(
+                                    content: Text("❌ Failed to assign task")),
                               );
                             }
                           },
@@ -252,8 +254,8 @@ Future<void> fetchUserProfile() async {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: sunsetCoral,
                             foregroundColor: Colors.white,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 14),
                           ),
                         ),
                         ElevatedButton.icon(
@@ -263,7 +265,9 @@ Future<void> fetchUserProfile() async {
                               suggestedTasks.remove(task);
                             });
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("❌ Rejected: ${task['title']}")),
+                              SnackBar(
+                                  content:
+                                      Text("❌ Rejected: ${task['title']}")),
                             );
                           },
                           icon: const Icon(Icons.close),
@@ -271,26 +275,30 @@ Future<void> fetchUserProfile() async {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey,
                             foregroundColor: Colors.white,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 14),
                           ),
                         ),
                       ] else ...[
                         ElevatedButton.icon(
                           onPressed: () async {
                             Navigator.pop(context);
-                            final uri = Uri.parse('$baseUrl/complete_task?task_id=${task['task_id']}');
+                            final uri = Uri.parse(
+                                '$baseUrl/complete_task?task_id=${task['task_id']}');
                             final response = await http.post(uri);
 
                             if (response.statusCode == 200) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("✅ Task marked as completed")),
+                                const SnackBar(
+                                    content:
+                                        Text("✅ Task marked as completed")),
                               );
                               _fetchCurrentTask();
                               _fetchCompletedTasks();
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("❌ Failed to complete task")),
+                                const SnackBar(
+                                    content: Text("❌ Failed to complete task")),
                               );
                             }
                           },
@@ -299,24 +307,28 @@ Future<void> fetchUserProfile() async {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: sunsetCoral,
                             foregroundColor: Colors.white,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 14),
                           ),
                         ),
                         ElevatedButton.icon(
                           onPressed: () async {
                             Navigator.pop(context);
-                            final uri = Uri.parse('$baseUrl/deny_task?task_id=${task['task_id']}');
+                            final uri = Uri.parse(
+                                '$baseUrl/deny_task?task_id=${task['task_id']}');
                             final response = await http.post(uri);
 
                             if (response.statusCode == 200) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("⚠️ Task was terminated")),
+                                const SnackBar(
+                                    content: Text("⚠️ Task was terminated")),
                               );
                               _fetchCurrentTask();
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("❌ Failed to terminate task")),
+                                const SnackBar(
+                                    content:
+                                        Text("❌ Failed to terminate task")),
                               );
                             }
                           },
@@ -325,15 +337,14 @@ Future<void> fetchUserProfile() async {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey,
                             foregroundColor: Colors.white,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 14),
                           ),
                         ),
                       ],
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 30),
               ],
             ),
@@ -408,45 +419,36 @@ Future<void> fetchUserProfile() async {
     );
   }
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-drawer: ProfileDrawer(userId: widget.userId), // ✅ Correct
-    extendBody: true,
-    backgroundColor: peachCream,
-    appBar: AppBar(
-leading: ProfileMenu(userId: widget.userId),  // ✅ Correct
-      title: Text(
-        _getGreetingMessage(),
-        style: const TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'Nunito',
-          color: skyAsh,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      drawer: ProfileDrawer(userId: widget.userId), // ✅ Correct
+      extendBody: true,
+      backgroundColor: peachCream,
+      appBar: AppBar(
+        leading: ProfileMenu(userId: widget.userId), // ✅ Correct
+        title: Text(
+          _getGreetingMessage(),
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Nunito',
+            color: skyAsh,
+          ),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.forum_outlined, size: 35, color: skyAsh),
-            onPressed: () {},
+            onPressed: () {
+              // Navigate to messages
+            },
           ),
           const SizedBox(width: 8),
         ],
         backgroundColor: sandBlush,
+        foregroundColor: Colors.white,
         elevation: 0,
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.forum_outlined, size: 35, color: skyAsh),
-          onPressed: () {
-            // Navigate to messages
-          },
-        ),
-        const SizedBox(width: 8),
-      ],
-      backgroundColor: sandBlush,
-      foregroundColor: Colors.white,
-      elevation: 0,
-    ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
