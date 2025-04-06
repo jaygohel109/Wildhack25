@@ -1,5 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../components/task_flashcard.dart';
+import '../components/profile_menu.dart';
+import '../components/custom_bottom_nav_bar.dart';
+import '../theme/theme_colors.dart';
 
 class VolunteerHomePage extends StatefulWidget {
   const VolunteerHomePage({super.key});
@@ -48,7 +52,7 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
     }
   }
 
-  void _showTaskModal(Map<String, String> task) {
+  void _showTaskModal(Map<String, String> task, {bool showActions = true}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -76,46 +80,52 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
                 const SizedBox(height: 12),
                 Text(task['subtitle']!, style: const TextStyle(fontSize: 16)),
                 const Spacer(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        setState(() {
-                          suggestedTasks.remove(task);
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("✅ Approved: ${task['title']}")),
-                        );
-                      },
-                      icon: const Icon(Icons.check),
-                      label: const Text("Approve"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                Visibility(
+                  visible: showActions,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          setState(() {
+                            suggestedTasks.remove(task);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("✅ Approved: ${task['title']}")),
+                          );
+                        },
+                        icon: const Icon(Icons.check),
+                        label: const Text("Approve"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                        ),
                       ),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        setState(() {
-                          suggestedTasks.remove(task);
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("❌ Rejected: ${task['title']}")),
-                        );
-                      },
-                      icon: const Icon(Icons.close),
-                      label: const Text("Reject"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          setState(() {
+                            suggestedTasks.remove(task);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("❌ Rejected: ${task['title']}")),
+                          );
+                        },
+                        icon: const Icon(Icons.close),
+                        label: const Text("Reject"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 30),
               ],
@@ -128,7 +138,7 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
 
   void _showCurrentTaskModal() {
     if (currentTask != null) {
-      _showTaskModal(currentTask!);
+      _showTaskModal(currentTask!, showActions: false); // No approve/reject for current task
     }
   }
 
@@ -148,14 +158,32 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F6FA),
+      drawer: const ProfileDrawer(),
+      extendBody: true,
+      backgroundColor: peachCream,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF13547A),
-        elevation: 0,
-        title: const Text("Good Morning 👋"),
+        leading: const ProfileMenu(),
+        title: Text(
+          _getGreetingMessage(),
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Nunito',
+            color: skyAsh,
+          ),
+        ),
         actions: [
-          IconButton(icon: const Icon(Icons.chat_bubble_outline), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.forum_outlined, size: 35, color: skyAsh),
+            onPressed: () {
+              // Navigate to messages
+            },
+          ),
+          const SizedBox(width: 8),
         ],
+        backgroundColor: sandBlush,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -163,7 +191,7 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
           const Text("Suggested Tasks", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           SizedBox(
-            height: 250, // ⬆️ More space
+            height: 250,
             child: Stack(
               clipBehavior: Clip.none,
               children: suggestedTasks.asMap().entries.toList().reversed.map((entry) {
@@ -217,6 +245,35 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
           ...completedTasks.map(_buildHistoryCard),
         ],
       ),
+      // FloatingActionButton removed
+      bottomNavigationBar: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            color: Colors.transparent,
+            child: const CustomBottomNavBar(),
+          ),
+        ),
+      ),
     );
+  }
+}
+
+String _getGreetingMessage() {
+  final hour = DateTime.now().hour;
+  const name = 'Heyt'; // Replace with dynamic volunteer name later
+
+  if (hour < 12) {
+    return 'Good Morning, $name 👋';
+  } else if (hour < 17) {
+    return 'Good Afternoon, $name 🌤️';
+  } else if (hour < 20) {
+    return 'Good Evening, $name 🌇';
+  } else {
+    return 'Good Night, $name 🌙';
   }
 }
