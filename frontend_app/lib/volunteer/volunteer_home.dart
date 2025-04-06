@@ -1,44 +1,60 @@
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../components/task_flashcard.dart';
 import '../components/profile_menu.dart';
 import '../components/custom_bottom_nav_bar.dart';
 import '../theme/theme_colors.dart';
 
 class VolunteerHomePage extends StatefulWidget {
-  const VolunteerHomePage({super.key});
+  final String userId;
+  const VolunteerHomePage({super.key, required this.userId});
 
   @override
   State<VolunteerHomePage> createState() => _VolunteerHomePageState();
 }
 
 class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProviderStateMixin {
-  List<Map<String, String>> suggestedTasks = [
-    {
-      'title': '📱 Set up Phone',
-      'subtitle': 'Assist with smartphone configuration.',
-    },
-    {
-      'title': '💡 Replace Bulbs',
-      'subtitle': 'Help change bulbs in hallway.',
-    },
-    {
-      'title': '🛍️ Grocery Pickup',
-      'subtitle': 'Pick up groceries for Mrs. Rao.',
-    },
-  ];
-
-  Map<String, String>? currentTask = {
-    'title': '🖨️ Connect Printer',
-    'subtitle': 'Assist connecting printer to laptop.',
-  };
-
-  List<Map<String, String>> completedTasks = [
-    {'title': 'Fix TV remote', 'customer': 'Mr. Patel'},
-    {'title': 'Organize medicine', 'customer': 'Mrs. Kapoor'},
-  ];
-
+  List<Map<String, String>> suggestedTasks = [];
+  Map<String, String>? currentTask;
+  List<Map<String, String>> completedTasks = [];
+  final String baseUrl = "http://localhost:8000";
   bool isAnimating = false;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSuggestedTasks();
+  }
+
+  Future<void> _fetchSuggestedTasks() async {
+    try {
+      final uri = Uri.parse("$baseUrl/matching_tasks/${widget.userId}"); // <-- Update as needed
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> tasks = data["matching_tasks"];
+
+        setState(() {
+          suggestedTasks = tasks.map<Map<String, String>>((task) {
+            return {
+              "title": task["issue"] ?? "Untitled Task",
+              "subtitle": task["description"] ?? "No Description",
+              "task_id": task["_id"],
+            };
+          }).toList();
+          isLoading = false;
+        });
+      } else {
+        throw Exception("Failed to load suggested tasks");
+      }
+    } catch (e) {
+      print("Error fetching tasks: $e");
+      setState(() => isLoading = false);
+    }
+  }
 
   void _onSwipeUp() async {
     if (suggestedTasks.isNotEmpty && !isAnimating) {
@@ -97,6 +113,7 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text("✅ Approved: ${task['title']}")),
                           );
+                          // TODO: Call assign_task_to_volunteer
                         },
                         icon: const Icon(Icons.check),
                         label: const Text("Approve"),
@@ -185,67 +202,70 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Text("Suggested Tasks", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 250,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: suggestedTasks.asMap().entries.toList().reversed.map((entry) {
-                final index = entry.key;
-                final task = entry.value;
-                final int offset = suggestedTasks.length - 1 - index;
-                final bool isTop = index == 0;
-                final bool isAnimatingTop = isTop && isAnimating;
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                const Text("Suggested Tasks", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 250,
+                  child: suggestedTasks.isEmpty
+                      ? const Center(child: Text("No suggested tasks at the moment."))
+                      : Stack(
+                          clipBehavior: Clip.none,
+                          children: suggestedTasks.asMap().entries.toList().reversed.map((entry) {
+                            final index = entry.key;
+                            final task = entry.value;
+                            final int offset = suggestedTasks.length - 1 - index;
+                            final bool isTop = index == 0;
+                            final bool isAnimatingTop = isTop && isAnimating;
 
-                return AnimatedPositioned(
-                  key: ValueKey(task['title']),
-                  duration: const Duration(milliseconds: 300),
-                  top: isAnimatingTop ? -200 : offset * 20,
-                  left: 0,
-                  right: 0,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 300),
-                    opacity: isAnimatingTop ? 0.0 : 1.0,
-                    child: TaskFlashCard(
-                      title: task['title']!,
-                      subtitle: task['subtitle']!,
-                      elevation: 5 - offset.toDouble(),
-                      isTopCard: isTop,
-                      onSwipeUp: _onSwipeUp,
-                      onTap: () => _showTaskModal(task),
+                            return AnimatedPositioned(
+                              key: ValueKey(task['title']),
+                              duration: const Duration(milliseconds: 300),
+                              top: isAnimatingTop ? -200 : offset * 20,
+                              left: 0,
+                              right: 0,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 300),
+                                opacity: isAnimatingTop ? 0.0 : 1.0,
+                                child: TaskFlashCard(
+                                  title: task['title']!,
+                                  subtitle: task['subtitle']!,
+                                  elevation: 5 - offset.toDouble(),
+                                  isTopCard: isTop,
+                                  onSwipeUp: _onSwipeUp,
+                                  onTap: () => _showTaskModal(task),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                ),
+                const SizedBox(height: 40),
+                const Text("Current Task", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                if (currentTask != null)
+                  GestureDetector(
+                    onTap: _showCurrentTaskModal,
+                    child: Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: ListTile(
+                        leading: const Icon(Icons.assignment_turned_in),
+                        title: Text(currentTask!['title']!),
+                        subtitle: Text(currentTask!['subtitle']!),
+                        trailing: const Icon(Icons.info_outline),
+                      ),
                     ),
                   ),
-                );
-              }).toList(),
+                const SizedBox(height: 30),
+                const Text("History", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                ...completedTasks.map(_buildHistoryCard),
+              ],
             ),
-          ),
-          const SizedBox(height: 40),
-          const Text("Current Task", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          if (currentTask != null)
-            GestureDetector(
-              onTap: _showCurrentTaskModal,
-              child: Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: ListTile(
-                  leading: const Icon(Icons.assignment_turned_in),
-                  title: Text(currentTask!['title']!),
-                  subtitle: Text(currentTask!['subtitle']!),
-                  trailing: const Icon(Icons.info_outline),
-                ),
-              ),
-            ),
-          const SizedBox(height: 30),
-          const Text("History", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          ...completedTasks.map(_buildHistoryCard),
-        ],
-      ),
-      // FloatingActionButton removed
       bottomNavigationBar: ClipRRect(
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
@@ -265,7 +285,7 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> with TickerProvid
 
 String _getGreetingMessage() {
   final hour = DateTime.now().hour;
-  const name = 'Heyt'; // Replace with dynamic volunteer name later
+  const name = 'Heyt'; // Replace dynamically if needed
 
   if (hour < 12) {
     return 'Good Morning, $name 👋';
