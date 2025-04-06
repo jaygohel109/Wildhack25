@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_app/senior/senior_home.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -142,6 +143,16 @@ class _ProfilePageState extends State<ProfilePage> {
               backgroundColor: Colors.green),
         );
         // TODO: Redirect based on role
+        if (profileData['role'] == 1) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SeniorHomePage(userId: profileData['user_id']),
+            ),
+          );
+        } else if (profileData['role'] == 2) {
+          Navigator.pushReplacementNamed(context, '/volunteerHome');
+        }
       } else {
         throw Exception(data['detail'] ?? "Profile submission failed");
       }
@@ -188,7 +199,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   },
                 ),
               ),
-              _buildTextField("Location", "location"),
+              _buildTextField("Street Address", "street_address"),
+              _buildTextField("City", "city"),
+              _buildTextField("State & ZIP Code (e.g., Illinois 60616)", "state_zip"),
               if (role == 1) ...[
                 _buildDOBPicker(),
               ] else if (role == 2) ...[
