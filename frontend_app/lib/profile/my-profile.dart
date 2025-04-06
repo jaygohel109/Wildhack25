@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
-import '../senior/senior_home.dart';
-import '../volunteer/volunteer_home.dart';
 
 class ProfilePage extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -18,9 +16,11 @@ class _ProfilePageState extends State<ProfilePage> {
   final Map<String, dynamic> profileData = {};
   final String baseUrl = "http://localhost:8000";
 
+  // Skills controllers
   List<String> skills = [];
   final TextEditingController skillController = TextEditingController();
 
+  // Date picker
   DateTime? selectedDOB;
   String? formattedDOB;
 
@@ -166,16 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
               content: Text("Profile submitted successfully"),
               backgroundColor: Colors.green),
         );
-
-        // 🔁 Redirect based on role
-        final role = widget.userData['role'];
-        if (role == 1) {
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => const SeniorHomePage()));
-        } else {
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => const VolunteerHomePage()));
-        }
+        // TODO: Redirect based on role
       } else {
         throw Exception(data['detail'] ?? "Profile submission failed");
       }
@@ -193,63 +184,53 @@ class _ProfilePageState extends State<ProfilePage> {
     final role = widget.userData['role'];
     final email = widget.userData['email'];
 
-  return Scaffold(
-    appBar: AppBar(title: const Text("Complete Your Profile")),
-    body: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          children: [
-            _buildDisabledField("Email", email),
-            _buildDisabledField("Role", role == 1 ? "Senior" : "Volunteer"),
-            _buildTextField("First Name", "first_name"),
-            _buildTextField("Last Name", "last_name"),
-            _buildTextField("Phone", "phone", inputType: TextInputType.phone),
-
-            // Gender Dropdown
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: "Gender",
-                  border: OutlineInputBorder(),
+    return Scaffold(
+      appBar: AppBar(title: const Text("Complete Your Profile")),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              _buildDisabledField("Email", email),
+              _buildDisabledField("Role", role == 1 ? "Senior" : "Volunteer"),
+              _buildTextField("First Name", "first_name"),
+              _buildTextField("Last Name", "last_name"),
+              _buildTextField("Phone", "phone", inputType: TextInputType.phone),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: "Gender",
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: "Male", child: Text("Male")),
+                    DropdownMenuItem(value: "Female", child: Text("Female")),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      profileData["gender"] = val;
+                    }
+                  },
                 ),
-                items: const [
-                  DropdownMenuItem(value: "Male", child: Text("Male")),
-                  DropdownMenuItem(value: "Female", child: Text("Female")),
-                ],
-                onChanged: (val) {
-                  if (val != null) {
-                    profileData["gender"] = val;
-                  }
-                },
               ),
-            ),
-
-            // 🔽 Address Fields 🔽
-            const SizedBox(height: 12),
-            _buildTextField("Street Address", "street_address"),
-            _buildTextField("City", "city"),
-            _buildTextField("State & ZIP Code (e.g., Illinois 60616)", "state_zip"),
-
-            // Conditional DOB or Skills/Age
-            if (role == 1) ...[
-              _buildDOBPicker(),
-            ] else if (role == 2) ...[
-              _buildArrayInput("Skills", skillController, skills, "skills"),
-              _buildTextField("Age", "age", inputType: TextInputType.number),
+              _buildTextField("Location", "location"),
+              if (role == 1) ...[
+                _buildDOBPicker(),
+              ] else if (role == 2) ...[
+                _buildArrayInput("Skills", skillController, skills, "skills"),
+                _buildTextField("Age", "age", inputType: TextInputType.number),
+              ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _submitProfile,
+                child: const Text("Submit"),
+              )
             ],
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _submitProfile,
-              child: const Text("Submit"),
-            )
-          ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
