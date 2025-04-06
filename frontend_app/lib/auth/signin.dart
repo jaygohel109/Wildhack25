@@ -72,14 +72,19 @@ class _SignInPageState extends State<SignInPage> {
           final role = responseData['role'];
           if (role == 1) {
             Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const SeniorHomePage()),
-            );
+  context,
+  MaterialPageRoute(
+    builder: (_) => SeniorHomePage(userId: responseData['id']),
+  ),
+);
+
           } else if (role == 2) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const VolunteerHomePage()),
-            );
+Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(
+    builder: (_) => VolunteerHomePage(userId: responseData['id']),
+  ),
+);
           }
         }
       } else {

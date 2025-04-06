@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import '../senior/senior_home.dart';
+import '../volunteer/volunteer_home.dart';
 
 class ProfilePage extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -148,36 +150,57 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _submitProfile() async {
-    _formKey.currentState?.save();
+Future<void> _submitProfile() async {
+  _formKey.currentState?.save();
 
-    final uri = Uri.parse('$baseUrl/create_profile');
-    try {
-      final response = await http.post(
-        uri,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(profileData),
-      );
+  final uri = Uri.parse('$baseUrl/create_profile');
+  try {
+    final response = await http.post(
+      uri,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(profileData),
+    );
 
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("Profile submitted successfully"),
-              backgroundColor: Colors.green),
-        );
-        // TODO: Redirect based on role
-      } else {
-        throw Exception(data['detail'] ?? "Profile submission failed");
-      }
-    } catch (e) {
+    final data = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 201) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text("Error: ${e.toString()}"),
-            backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text("Profile submitted successfully"),
+          backgroundColor: Colors.green,
+        ),
       );
+
+      final role = widget.userData['role'];
+      final userId = widget.userData['id'];
+
+      // Redirect based on role
+      if (role == 1) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SeniorHomePage(userId: userId),
+          ),
+        );
+      } else if (role == 2) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VolunteerHomePage(userId: userId),
+          ),
+        );
+      }
+    } else {
+      throw Exception(data['detail'] ?? "Profile submission failed");
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Error: ${e.toString()}"),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {

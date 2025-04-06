@@ -1,10 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class SeniorHomePage extends StatelessWidget {
-  const SeniorHomePage({super.key});
+class SeniorHomePage extends StatefulWidget {
+  final String userId;
+  const SeniorHomePage({super.key, required this.userId});
+
+  @override
+  State<SeniorHomePage> createState() => _SeniorHomePageState();
+}
+
+class _SeniorHomePageState extends State<SeniorHomePage> {
+  bool userExists = false;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUserExists();
+  }
+
+  Future<void> _checkUserExists() async {
+    try {
+      final response = await http.get(
+        Uri.parse("http://localhost:8000/user/${widget.userId}"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['exists'] == true) {
+          setState(() {
+            userExists = true;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error checking user: $e");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!userExists) {
+      return Scaffold(
+        body: Center(
+          child: Text(
+            "User not found",
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
