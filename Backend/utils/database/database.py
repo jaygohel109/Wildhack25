@@ -121,7 +121,7 @@ async def create_task(task: TasksRequest):
 
 
 async def get_matching_tasks(volunteer_id: str):
-    volunteer = await db["users"].find_one({"_id": ObjectId(volunteer_id)})
+    volunteer = await db["users"].find_one({"_id": volunteer_id})
     if not volunteer:
         return {"error": "Volunteer not found"}
 
@@ -129,7 +129,7 @@ async def get_matching_tasks(volunteer_id: str):
 
     cursor = db["tasks"].find({
         "category": {"$in": skills},
-        "status": {"$in": ["open", "in-progress"]}
+        "status": {"$in": ["in-progress"]}
     })
 
     matching_tasks = []
@@ -142,6 +142,126 @@ async def get_matching_tasks(volunteer_id: str):
         matching_tasks.append(task)
 
     return {"matching_tasks": matching_tasks}
+
+async def get_active_tasks_by_user(user_id: str):
+    pipeline = [
+        {
+            "$match": {
+                "created_by": ObjectId(user_id),
+                "status": {"$in": ["open", "in-progress"]}
+            }
+        },
+        {
+            "$lookup": {
+                "from": "profiles",
+                "let": { "vol_id": "$volunteer_id" },
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": { "$eq": ["$user_id", "$$vol_id"] }
+                        }
+                    }
+                ],
+                "as": "volunteer_info"
+            }
+        },
+        {
+            "$unwind": {
+                "path": "$volunteer_info",
+                "preserveNullAndEmptyArrays": True
+            }
+        },
+        {
+            "$project": {
+                "_id": { "$toString": "$_id" },
+                "created_by": { "$toString": "$created_by" },
+                "issue": 1,
+                "status": 1,
+                "category": 1,
+                "priority": 1,
+                "description": 1,
+                "volunteer_id": {
+                    "$cond": {
+                        "if": { "$ifNull": ["$volunteer_id", False] },
+                        "then": { "$toString": "$volunteer_id" },
+                        "else": None
+                    }
+                },
+                "volunteer": {
+                    "name": "$volunteer_info.first_name",
+                    "gender": "$volunteer_info.gender"
+                }
+            }
+        }
+    ]
+
+    results = await db["tasks"].aggregate(pipeline).to_list(length=None)
+    return {"active_tasks": results}
+
+async def get_completed_tasks_by_user(user_id: str):
+    pipeline = [
+        {
+            "$match": {
+                "created_by": ObjectId(user_id),
+                "status": "completed"
+            }
+        },
+        {
+            "$lookup": {
+                "from": "profiles",
+                "let": { "vol_id": "$volunteer_id" },
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$and": [
+                                    { "$ne": ["$$vol_id", None] },
+                                    { "$eq": ["$user_id", "$$vol_id"] }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "as": "volunteer_info"
+            }
+        },
+        {
+            "$unwind": {
+                "path": "$volunteer_info",
+                "preserveNullAndEmptyArrays": True
+            }
+        },
+        {
+            "$project": {
+                "_id": { "$toString": "$_id" },
+                "created_by": { "$toString": "$created_by" },
+                "issue": 1,
+                "status": 1,
+                "category": 1,
+                "priority": 1,
+                "description": 1,
+                "volunteer_id": {
+                    "$cond": {
+                        "if": { "$ifNull": ["$volunteer_id", False] },
+                        "then": { "$toString": "$volunteer_id" },
+                        "else": None
+                    }
+                },
+                "volunteer": {
+                    "$cond": {
+                        "if": { "$gt": ["$volunteer_info", None] },
+                        "then": {
+                            "name": "$volunteer_info.first_name",
+                            "gender": "$volunteer_info.gender"
+                        },
+                        "else": None
+                    }
+                }
+            }
+        }
+    ]
+    results = await db["tasks"].aggregate(pipeline).to_list(length=None)
+    return {"completed_tasks": results}
 
 async def assign_task_to_volunteer(task_id: str, volunteer_id: str):
     result = await db["tasks"].update_one(
