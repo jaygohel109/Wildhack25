@@ -5,7 +5,7 @@ class TaskFlashCard extends StatelessWidget {
   final String subtitle;
   final double elevation;
   final bool isTopCard;
-  final VoidCallback onSwipeUp;
+  final VoidCallback onSwipeDown;
   final VoidCallback onTap;
 
   const TaskFlashCard({
@@ -14,7 +14,7 @@ class TaskFlashCard extends StatelessWidget {
     required this.subtitle,
     required this.elevation,
     required this.isTopCard,
-    required this.onSwipeUp,
+    required this.onSwipeDown,
     required this.onTap,
   });
 
@@ -22,9 +22,8 @@ class TaskFlashCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onPanUpdate: (details) {
-        // Detect upward drag
-        if (details.delta.dy < -10 && isTopCard) {
-          onSwipeUp();
+        if (details.delta.dy > 10 && isTopCard) {
+          onSwipeDown();
         }
       },
       onTap: isTopCard ? onTap : null,
