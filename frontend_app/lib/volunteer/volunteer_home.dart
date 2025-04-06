@@ -209,77 +209,131 @@ Future<void> fetchUserProfile() async {
                     style: const TextStyle(
                         fontSize: 16, fontFamily: 'Nunito', color: slateText)),
                 const Spacer(),
+                
                 Visibility(
-                  visible: showActions,
+                  visible: true,
                   maintainSize: true,
                   maintainAnimation: true,
                   maintainState: true,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          setState(() {
-                            suggestedTasks.remove(task);
-                          });
+                      if (showActions) ...[
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            setState(() {
+                              suggestedTasks.remove(task);
+                            });
 
-                          final uri = Uri.parse('$baseUrl/assign_task');
-                          final response = await http.post(
-                            uri,
-                            headers: {'Content-Type': 'application/json'},
-                            body: jsonEncode({
-                              'task_id': task['task_id'],
-                              'volunteer_id': widget.userId,
-                            }),
-                          );
+                            final uri = Uri.parse('$baseUrl/assign_task');
+                            final response = await http.post(
+                              uri,
+                              headers: {'Content-Type': 'application/json'},
+                              body: jsonEncode({
+                                'task_id': task['task_id'],
+                                'volunteer_id': widget.userId,
+                              }),
+                            );
 
-                          if (response.statusCode == 200) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content:
-                                      Text("✅ Approved: ${task['title']}")),
-                            );
-                            _fetchCurrentTask(); // Refresh current tasks
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text("❌ Failed to assign task")),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.check),
-                        label: const Text("Approve"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: sunsetCoral,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 14),
+                            if (response.statusCode == 200) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("✅ Approved: ${task['title']}")),
+                              );
+                              _fetchCurrentTask();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("❌ Failed to assign task")),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.check),
+                          label: const Text("Approve"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: sunsetCoral,
+                            foregroundColor: Colors.white,
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          ),
                         ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          setState(() {
-                            suggestedTasks.remove(task);
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text("❌ Rejected: ${task['title']}")),
-                          );
-                        },
-                        icon: const Icon(Icons.close),
-                        label: const Text("Reject"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 14),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            setState(() {
+                              suggestedTasks.remove(task);
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("❌ Rejected: ${task['title']}")),
+                            );
+                          },
+                          icon: const Icon(Icons.close),
+                          label: const Text("Reject"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            foregroundColor: Colors.white,
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          ),
                         ),
-                      ),
+                      ] else ...[
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            final uri = Uri.parse('$baseUrl/complete_task?task_id=${task['task_id']}');
+                            final response = await http.post(uri);
+
+                            if (response.statusCode == 200) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("✅ Task marked as completed")),
+                              );
+                              _fetchCurrentTask();
+                              _fetchCompletedTasks();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("❌ Failed to complete task")),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text("Completed"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: sunsetCoral,
+                            foregroundColor: Colors.white,
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            final uri = Uri.parse('$baseUrl/deny_task?task_id=${task['task_id']}');
+                            final response = await http.post(uri);
+
+                            if (response.statusCode == 200) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("⚠️ Task was terminated")),
+                              );
+                              _fetchCurrentTask();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("❌ Failed to terminate task")),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.cancel),
+                          label: const Text("Terminate"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            foregroundColor: Colors.white,
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
+
                 const SizedBox(height: 30),
               ],
             ),
